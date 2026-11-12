@@ -7,3 +7,17 @@ frontend/dist
 data
 output
 .env
+docs/validation-results
+docs/benchmark-results
+docs/IMPLEMENTATION_REPORT.md
+docs/RELEASE_READINESS.md
+docs/RESUME_AFTER_RESTART.md
+docs/SERVER_HANDOFF.md
+docs/SCHEDULED_OPERATION.md
+docs/SERVER_DEPLOYMENT_STATUS.md
+docs/API_DEPLOYMENT_*.md
+docs/VALIDATION.md
+docs/BENCHMARK.md
+*.log
+*.bundle
+.runtime

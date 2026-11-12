@@ -7,7 +7,7 @@ $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $taskRoot
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
-    $taskDockerBin = 'C:/Program Files/Docker/Docker\resources\bin'
+    $taskDockerBin = Join-Path $env:ProgramFiles 'Docker\Docker\resources\bin'
     if (Test-Path -LiteralPath (Join-Path $taskDockerBin 'docker.exe')) {
         $env:Path = $taskDockerBin + ';' + $env:Path
     }
