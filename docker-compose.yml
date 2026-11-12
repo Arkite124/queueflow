@@ -1,0 +1,115 @@
+name: queueflow
+
+x-app: &app
+  build:
+    context: .
+    dockerfile: backend/Dockerfile
+  environment: &environment
+    DATABASE_URL: postgresql+psycopg://queueflow:${POSTGRES_PASSWORD:-queueflow_local}@postgres:5432/queueflow
+    REDIS_URL: redis://redis:6379/0
+    STORAGE_ROOT: /data
+    CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+    MAX_FILE_BYTES: ${MAX_FILE_BYTES:-20971520}
+    MAX_ROWS: ${MAX_ROWS:-100000}
+    MAX_ACTIVE_JOBS: ${MAX_ACTIVE_JOBS:-100}
+    UPLOADS_PER_MINUTE: ${UPLOADS_PER_MINUTE:-30}
+    MAX_STORAGE_BYTES: ${MAX_STORAGE_BYTES:-1073741824}
+    LEASE_SECONDS: ${LEASE_SECONDS:-30}
+    HEARTBEAT_SECONDS: ${HEARTBEAT_SECONDS:-5}
+    RECLAIM_IDLE_MS: ${RECLAIM_IDLE_MS:-30000}
+    RETRY_BASE_SECONDS: ${RETRY_BASE_SECONDS:-5}
+    RECONCILE_SECONDS: ${RECONCILE_SECONDS:-60}
+    MAX_ATTEMPTS: ${MAX_ATTEMPTS:-3}
+    RETENTION_HOURS: ${RETENTION_HOURS:-168}
+  volumes:
+    - files:/data
+  restart: unless-stopped
+
+services:
+  postgres:
+    image: postgres:17.6-alpine
+    environment:
+      POSTGRES_DB: queueflow
+      POSTGRES_USER: queueflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-queueflow_local}
+    volumes: ["postgres_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U queueflow -d queueflow"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4.6-alpine
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
+    volumes: ["redis_data:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  storage-init:
+    image: python:3.13-slim
+    user: root
+    volumes: ["files:/data"]
+    command: ["python", "-c", "import os; os.chown('/data',10001,10001); os.chmod('/data',0o750)"]
+    restart: "no"
+
+  migrate:
+    <<: *app
+    command: ["alembic", "-c", "backend/alembic.ini", "upgrade", "head"]
+    depends_on:
+      postgres: {condition: service_healthy}
+      storage-init: {condition: service_completed_successfully}
+    restart: "no"
+
+  api:
+    <<: *app
+    ports: ["127.0.0.1:${API_PORT:-8100}:8100"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8100/ready', timeout=4)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    stop_grace_period: 30s
+
+  dispatcher:
+    <<: *app
+    command: ["python", "-m", "worker.dispatcher"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+    stop_grace_period: 15s
+
+  worker:
+    <<: *app
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    command: ["python", "-m", "worker.main"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+    stop_grace_period: 180s
+
+  frontend:
+    profiles: ["ui"]
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8100}
+    ports: ["127.0.0.1:${FRONTEND_PORT:-5173}:80"]
+    depends_on: [api]
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  files:

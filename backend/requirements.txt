@@ -1,0 +1,10 @@
+-c ../requirements-lock.txt
+fastapi==0.162.0
+uvicorn==0.54.0
+pydantic==2.14.1
+SQLAlchemy==2.0.44
+alembic==1.17.1
+psycopg[binary]==3.2.12
+redis==7.0.1
+python-multipart==0.0.31
+psutil==7.2.2
