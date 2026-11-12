@@ -8,7 +8,7 @@ import type { Artifact, Job, JobEvent, Page } from '../types';
 
 export default function JobDetail() {
   const { id } = useParams(); const client = useQueryClient(); const [offset, setOffset] = useState(0);
-  const job = useQuery({ queryKey: ['job', id], queryFn: () => api<Job>(`/api/v1/jobs/${id}`), refetchInterval: q => terminal(q.state.data?.status) ? false : 2000 });
+  const job = useQuery({ queryKey: ['job', id], queryFn: () => api<Job>(`/api/v1/jobs/${id}`), refetchInterval: q => q.state.data && !terminal(q.state.data.status) ? 2000 : false });
   const done = terminal(job.data?.status);
   const events = useQuery({ queryKey: ['events', id, offset, job.data?.status], queryFn: () => api<Page<JobEvent>>(`/api/v1/jobs/${id}/events?limit=30&offset=${offset}`), refetchInterval: done ? false : 2000, enabled: !!job.data });
   const artifacts = useQuery({ queryKey: ['artifacts', id, job.data?.status], queryFn: () => api<{ items: Artifact[] }>(`/api/v1/jobs/${id}/artifacts`), enabled: !!job.data });

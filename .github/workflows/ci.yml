@@ -13,7 +13,7 @@ jobs:
           POSTGRES_USER: queueflow_test
           POSTGRES_PASSWORD: isolated_test_only
         ports: ["5432:5432"]
-        options: --health-cmd "pg_isready -U queueflow_test -d queueflow_test" --health-interval 5s --health-timeout 3s --health-retries 20
+        options: --health-cmd "pg_isready -h 127.0.0.1 -U queueflow_test -d queueflow_test" --health-interval 5s --health-timeout 3s --health-retries 20
       redis:
         image: redis:7.4.6-alpine
         ports: ["6379:6379"]

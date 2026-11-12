@@ -57,6 +57,6 @@ docker compose exec api python -m scripts.maintenance resume
 
 `frontend/public/_redirects`가 `/* /index.html 200`을 포함하므로 Pages 배포 시 클라이언트 라우트 새로고침을 준비합니다. 로컬 Vite의 `/new` 직접 요청은 HTTP 200을 확인했지만 실제 Pages 라우팅은 미검증입니다. Pages는 정적 React만 호스팅하며 FastAPI/PostgreSQL/Redis/worker는 별도 Windows 서버의 Docker Compose에서 실행합니다.
 
-초대 계정·owner 권한·관리자 범위 분리는 추가했으나 **운영 적용 전 검증은 미완료**입니다. 후속 순서는 재부팅 후 실제 격리 복구/인증 테스트 → HTTPS cookie와 CORS·파일 보존·quota 확인 → CPU/RAM 실측과 자원 한도 검토 → QueueFlow API용 Tunnel ingress 검토입니다. 기존 Tunnel 전체 구성을 덮어쓰지 말고 별도 API hostname 항목만 검토해야 합니다. 프론트 Pages는 사용자 승인으로 이미 등록했고 최초 배포 성공을 화면에서 확인했습니다.
+홈 PC에서 실제 PostgreSQL/Redis 테스트 54개, 전체 스택 복구 시나리오 8개, 초대 인증과 Chrome 업로드·다운로드 검증을 통과했습니다. worker 1/2/4개의 CPU·RAM을 측정하고 worker 1개로 운영 후보 자원 한도를 확인했습니다. 후속 배포에서는 QueueFlow API용 Tunnel ingress와 두 custom domain을 연결한 뒤 실제 HTTPS cookie·CORS·CSRF와 파일 다운로드를 확인합니다. 프론트 Pages는 사용자 승인으로 등록했고 최초 배포 성공을 화면에서 확인했습니다. 구체적인 근거는 [홈 PC 검증 기록](TESTING.md)에 있습니다.
 
 초기 main push와 Pages 등록은 사용자 승인 이후 진행했습니다. 새 변경의 main 병합/운영 배포, DNS 변경, 기존 Tunnel 변경, 운영 서버 Compose 적용/재시작은 별도 승인 범위입니다. 이번 후속 작업에서는 기존 운영 서버에 적용하거나 재시작하지 않았습니다.

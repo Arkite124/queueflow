@@ -26,6 +26,8 @@ def free_port():
 class Stack:
     def __init__(self, directory):
         self.project = "queueflow-recovery-" + uuid.uuid4().hex[:10]
+        self.log_path = ROOT / "output" / f"{self.project}.log"
+        self.log_path.parent.mkdir(parents=True, exist_ok=True)
         self.override = directory / "override.json"
         self.port = free_port()
         self.environment = os.environ.copy()
@@ -41,10 +43,17 @@ class Stack:
             "QUEUEFLOW_TEST_MODE": "1", "QUEUEFLOW_TEST_FAULT": point, "QUEUEFLOW_TEST_ROW_DELAY": "0.025"}}}}))
 
     def compose(self, *args, input_text=None):
-        return subprocess.run(["docker", "compose", "--project-name", self.project, "-f", str(ROOT / "docker-compose.yml"),
-                               "-f", str(self.override), *args], cwd=ROOT, env=self.environment,
-                              check=True, text=True, input=input_text,
-                              stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout
+        label = "local account provisioning" if args[0] == "exec" else " ".join(args)
+        print(f"[{self.project}] {label}", flush=True)
+        result = subprocess.run(["docker", "compose", "--project-name", self.project, "-f", str(ROOT / "docker-compose.yml"),
+                                 "-f", str(self.override), *args], cwd=ROOT, env=self.environment,
+                                text=True, input=input_text, encoding="utf-8", errors="replace",
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        with self.log_path.open("a", encoding="utf-8") as log:
+            log.write(f"\nCOMMAND: {label}\n{result.stdout}\n{result.stderr}\n")
+        if result.returncode:
+            raise RuntimeError(f"Compose {args[0]} exited {result.returncode}; see {self.log_path}")
+        return result.stdout
 
     def wait_health(self):
         deadline = time.monotonic() + 90

@@ -2,7 +2,7 @@
 
 장애 복구와 데이터 일관성을 검증하는 비동기 CSV 처리 플랫폼. HTTP 요청은 파일과 작업을 영속 등록하고, 별도 Python 워커가 검증·정제·오류 보고서를 생성합니다. PostgreSQL이 최종 상태와 결과 참조의 기준이며 Redis Streams는 **at-least-once 전달**을 담당합니다.
 
-**현재 상태:** 초기 main 커밋의 GitHub CI에서 PostgreSQL/Redis service를 사용한 pytest, 프론트엔드, Compose config가 성공했습니다. 후속 작업으로 초대 계정 로그인·사용자별 접근 제어와 운영 자원 한도를 추가하고 Docker Desktop을 D드라이브에 설치했습니다. Windows 재부팅이 필요해 새 버전의 홈 PC 컨테이너 복구·자원 실측은 아직 남았습니다. 최신 상태는 [배포 조건 점검](docs/TESTING.md), 인증 설계는 [초대 계정 문서](docs/AUTHENTICATION.md)를 보세요. 초기 [구현 보고서](docs/ARCHITECTURE.md)와 [검증 기록](docs/TESTING.md)은 해당 시점의 기록입니다.
+2026-11-12 홈 PC의 실제 PostgreSQL/Redis 환경에서 전체 테스트 54개와 Docker 장애·복구 시나리오 8개가 통과했습니다. 초대 계정 인증과 사용자별 파일 접근을 구현하고 worker 1/2/4개의 CPU·메모리·처리량을 측정했습니다. 최신 결과는 [배포 조건 점검](docs/TESTING.md), 인증 설계는 [초대 계정 문서](docs/AUTHENTICATION.md)에 있습니다. 초기 [구현 보고서](docs/ARCHITECTURE.md)와 [검증 기록](docs/TESTING.md)은 해당 시점의 기록입니다.
 
 ## 구현 범위
 
@@ -35,7 +35,7 @@ flowchart LR
   W1 & WN -->|attempt-scoped artifacts| F
 ```
 
-Python 3.13, FastAPI, Pydantic, SQLAlchemy 2, Alembic, psycopg, PostgreSQL 17, Redis 7.4, React 19, TypeScript, Vite, Tailwind 4, React Router, TanStack Query를 사용합니다. 실제 설치한 Python 전이 의존성은 [requirements-lock.txt](requirements-lock.txt), 프론트엔드는 [package-lock.json](frontend/package-lock.json)으로 고정했습니다. Docker 이미지의 minor 태그는 digest 고정이 아니며 Linux 이미지 실행 호환성은 미검증입니다.
+Python 3.13, FastAPI, Pydantic, SQLAlchemy 2, Alembic, psycopg, PostgreSQL 17, Redis 7.4, React 19, TypeScript, Vite, Tailwind 4, React Router, TanStack Query를 사용합니다. 실제 설치한 Python 전이 의존성은 [requirements-lock.txt](requirements-lock.txt), 프론트엔드는 [package-lock.json](frontend/package-lock.json)으로 고정했습니다. Docker Desktop의 Linux 컨테이너에서 전체 스택을 실행했습니다. 이미지 태그는 버전으로 지정하며 digest 고정은 추후 작업입니다.
 
 ## Windows PowerShell 실행
 
@@ -128,7 +128,7 @@ python -m scripts.run_benchmark --mode api --workers 4 --rows 100000 --jobs 4 --
 docker stats --no-stream
 ```
 
-워커 축소 직후에는 제거된 워커의 heartbeat가 lease 시간 동안 남습니다. 스크립트는 **관측한 온라인 워커 수가 요청한 수와 같을 때만** 측정합니다. DB 부하 표본이 필요하면 측정 프로세스에서 접근할 수 있는 `BENCHMARK_DATABASE_URL`을 별도로 설정합니다. [실측 결과와 한계](docs/PERFORMANCE_TESTING.md)에 처리기 단독 결과를 기록했습니다. 분산 워커 1/2/4 비교와 복구 시간은 아직 미측정입니다.
+워커 축소 직후에는 제거된 워커의 heartbeat가 lease 시간 동안 남습니다. 스크립트는 **관측한 온라인 워커 수가 요청한 수와 같을 때만** 측정합니다. DB 부하 표본이 필요하면 `scripts.measure_containers --postgres`로 해당 프로젝트의 내부 DB를 조회할 수 있습니다. 100,000행 작업 4개를 각각 3회 실행한 평균 완료 시간은 worker 1/2/4개에서 7.75/5.34/3.83초였습니다. [실측 결과와 한계](docs/PERFORMANCE_TESTING.md)에 원본 결과와 재현 명령을 기록했습니다.
 
 ## 운영 및 제한
 

@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: queueflow_test
       POSTGRES_PASSWORD: isolated_test_only
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U queueflow_test -d queueflow_test"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U queueflow_test -d queueflow_test"]
       interval: 2s
       timeout: 2s
       retries: 30
@@ -22,6 +22,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.test
+    command: ["pytest", "-v", "--junitxml=/app/output/pytest.xml"]
     environment:
       TEST_DATABASE_URL: postgresql+psycopg://queueflow_test:isolated_test_only@postgres-test:5432/queueflow_test
       TEST_REDIS_URL: redis://redis-test:6379/0
