@@ -75,7 +75,8 @@ def test_invited_users_have_isolated_jobs_idempotency_and_files(invited):
     assert submit(a, key="same-per-owner").json()["job_id"] == first["job_id"]
     for client in (b, clients["anonymous"]):
         expected = 404 if client is b else 401
-        for suffix in ("", "/events", "/artifacts", "/artifacts/input", "/artifacts/cleaned"):
+        for suffix in ("", "/events", "/artifacts", "/artifacts/input", "/artifacts/cleaned",
+                       "/exports/results.zip", "/exports/report.xlsx"):
             assert client.get(first["status_url"] + suffix).status_code == expected
         assert client.post(first["status_url"] + "/cancel").status_code == expected
     assert a.get("/api/v1/jobs").json()["total"] == b.get("/api/v1/jobs").json()["total"] == 1
@@ -83,6 +84,9 @@ def test_invited_users_have_isolated_jobs_idempotency_and_files(invited):
     assert execute(sessions, settings, storage, claim)
     assert a.get(first["status_url"] + "/artifacts/cleaned").status_code == 200
     assert b.get(first["status_url"] + "/artifacts/cleaned").status_code == 404
+    for kind in ("results.zip", "report.xlsx"):
+        assert a.get(first["status_url"] + "/exports/" + kind).status_code == 200
+        assert b.get(first["status_url"] + "/exports/" + kind).status_code == 404
     assert a.get("/api/v1/stats").json()["counts"]["SUCCEEDED"] == 1
     assert b.get("/api/v1/stats").json()["counts"]["SUCCEEDED"] == 0
 

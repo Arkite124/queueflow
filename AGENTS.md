@@ -1,6 +1,7 @@
 # QueueFlow contributor instructions
 
 - Work only inside this independent project; do not change the parent portfolio.
+- Develop and integrate changes on `develop`; promote reviewed, validated changes from `develop` to `main` for release within the user's authorized scope.
 - PostgreSQL is authoritative. Redis delivery is at least once.
 - Every worker mutation must verify its current, unexpired lease and fencing token.
 - Commit job state, artifacts, attempt history and outbox records in transactions.

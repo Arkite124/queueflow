@@ -1,5 +1,7 @@
 # Resolved and verified with CPython 3.13.7 on Windows; includes development dependencies.
 Mako==1.4.3
+openpyxl==3.1.5
+et_xmlfile==2.0.0
 MarkupSafe==3.0.4
 Pygments==2.21.0
 SQLAlchemy==2.0.44
