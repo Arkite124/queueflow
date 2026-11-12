@@ -11,7 +11,8 @@ from uuid import UUID, uuid4
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from starlette.background import BackgroundTask
 from pydantic import ValidationError
 from sqlalchemy import func, select, text
 from starlette.concurrency import run_in_threadpool
@@ -24,6 +25,7 @@ from backend.app.models import Artifact, Attempt, Event, Job, LoginSession, User
 from backend.app.services.jobs import CapacityExceeded, Conflict, cancel_job, create_job
 from backend.app.services.auth import Auth, LoginInput, Principal
 from backend.app.services.storage import LocalStorage
+from backend.app.services.reports import chunks, result_export
 from shared.contracts import Status
 from worker.consumers.streams import redis_client
 from worker.processors.csv_processor import PermanentInputError, inspect_header
@@ -274,6 +276,30 @@ def create_app(settings=None, sessions=None, storage=None, redis=None):
                                "available": not job.files_expired,
                                "download_url": f"/api/v1/jobs/{job_id}/artifacts/{x.artifact_type}"}
                               for x in session.scalars(select(Artifact).where(Artifact.job_id == str(job_id)))]}
+
+    @app.get("/api/v1/jobs/{job_id}/exports/{format}")
+    def export_results(job_id: UUID, format: str, principal: Principal = Depends(auth.user)):
+        if format not in {"results.zip", "report.xlsx"}:
+            raise HTTPException(404, "Export not found")
+        with sessions() as session:
+            job = get_owned(session, job_id, principal.owner_id)
+            if job.files_expired:
+                raise HTTPException(410, "Files expired under retention policy")
+            required = {"cleaned", "errors", "summary"} if format == "results.zip" else {"summary"}
+            records = session.scalars(select(Artifact).where(
+                Artifact.job_id == str(job_id), Artifact.artifact_type.in_(required))).all()
+            if {a.artifact_type for a in records} != required:
+                raise HTTPException(404, "Results not available")
+            paths = {a.artifact_type: storage.path(a.storage_key) for a in records}
+            try:
+                output = result_export(paths, bundle=format == "results.zip")
+            except FileNotFoundError:
+                raise HTTPException(410, "File is no longer available") from None
+        media = "application/zip" if format == "results.zip" else (
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        return StreamingResponse(chunks(output), media_type=media, background=BackgroundTask(output.close),
+                                 headers={"Content-Disposition": f'attachment; filename="{format}"',
+                                          "X-Content-Type-Options": "nosniff", "Cache-Control": "no-store"})
 
     @app.get("/api/v1/jobs/{job_id}/artifacts/{artifact_type}")
     def download(job_id: UUID, artifact_type: str, principal: Principal = Depends(auth.user)):
