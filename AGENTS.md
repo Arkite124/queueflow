@@ -10,4 +10,5 @@
 - Use Alembic migrations. Never reset databases or delete Docker volumes as routine setup.
 - Run unit tests, frontend lint/build and isolated PostgreSQL/Redis tests where available.
 - Report skipped infrastructure checks explicitly. Never invent benchmark numbers.
+- Keep machine-local logs, benchmark/validation output and operator handoffs untracked. Never commit personal absolute paths or hostnames; run the repository hygiene check before committing.
 - Push only with user authorization. Do not merge main, publish, modify DNS/tunnels, restart existing services, or edit OS schedules without specific authorization.
