@@ -41,6 +41,6 @@ docker compose exec api python -m scripts.manage_users disable invited-user
 
 ## 확인한 범위
 
-SQLite + HTTPS TestClient에서 세션 cookie 속성·만료·폐기·계정 분리·멱등 키 범위·파일 접근·CSRF/Origin·관리자 범위·실패 잠금·public 설정 오류를 검증했습니다. PostgreSQL/Redis의 인증된 업로드→Stream→결과 다운로드 테스트와 격리 Compose의 실제 HTTP 인증 시나리오도 추가했습니다. 후자의 실행은 Windows 재부팅 후 진행해야 하며 아직 PASS로 기록하지 않습니다. 브라우저의 실제 HTTPS cookie 동작도 남아 있습니다.
+SQLite + HTTPS TestClient에서 세션 cookie 속성·만료·폐기·계정 분리·멱등 키 범위·파일 접근·CSRF/Origin·관리자 범위·실패 잠금·public 설정 오류를 검증했습니다. 재부팅 후 실제 PostgreSQL/Redis 전체 테스트 54개와 격리 Compose 시나리오 8개를 통과했고, 로컬 Chrome에서 로그인·CSV 업로드·다운로드·계정 전환·세션 만료를 확인했습니다. 공개 HTTPS 도메인의 cookie·CORS·CSRF는 서버 배포 단계에서 확인합니다. 근거는 [홈 PC 검증 기록](TESTING.md), 이어갈 명령은 [서버 PC 인계 문서](DEPLOYMENT.md)에 있습니다.
 
 설계 참고: [OWASP Password Storage](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html), [OWASP CSRF Prevention](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html), [Starlette response cookies](https://www.starlette.io/responses/).

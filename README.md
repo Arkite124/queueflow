@@ -4,6 +4,8 @@
 
 2026-11-12 홈 PC의 실제 PostgreSQL/Redis 환경에서 전체 테스트 54개와 Docker 장애·복구 시나리오 8개가 통과했습니다. 초대 계정 인증과 사용자별 파일 접근을 구현하고 worker 1/2/4개의 CPU·메모리·처리량을 측정했습니다. 최신 결과는 [배포 조건 점검](docs/TESTING.md), 인증 설계는 [초대 계정 문서](docs/AUTHENTICATION.md)에 있습니다. 초기 [구현 보고서](docs/ARCHITECTURE.md)와 [검증 기록](docs/TESTING.md)은 해당 시점의 기록입니다.
 
+서버 PC에서 이어갈 설치·기동 명령, 환경 변수, Tunnel·Pages 설정과 전달용 프롬프트는 [서버 PC 인계 문서](docs/DEPLOYMENT.md)에 있습니다.
+
 ## 구현 범위
 
 - UTF-8/BOM CSV 업로드, 20 MiB·100,000행 제한, 실제 수신 바이트와 셀/행 크기 검사

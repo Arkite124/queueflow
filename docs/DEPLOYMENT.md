@@ -2,9 +2,9 @@
 
 ## 로컬 전제와 충돌
 
-현재 작업 PC는 Windows 11이며 Python 3.13.7과 Node 24.22.1을 기존 `.tools`에서 확인했습니다. 후속 요청으로 Docker Desktop을 D드라이브에 설치했고 세 가지 Compose 구성을 실제 CLI로 검증했습니다. WSL/가상화 기능 활성화 후 Windows 재부팅이 필요해 엔진 기동은 아직 남았습니다. [최신 배포 조건](TESTING.md)을 우선 확인하세요. 포트 조회에서는 8100/5173/5432/6379의 기존 listener를 발견하지 못했으나 실제 기동 전 다시 확인하세요.
+홈 PC는 Windows 11이며 Docker Desktop을 D드라이브에 설치하고 재부팅 후 실제 Linux 컨테이너에서 전체 테스트와 복구·인증·자원 검증을 마쳤습니다. 서버 PC에서 이어갈 명령과 설정은 [서버 PC 인계 문서](DEPLOYMENT.md), 실측 근거는 [최신 배포 조건](TESTING.md)에 있습니다. 아래 기본 Compose 명령은 localhost 개발용이며 서버 배포는 인계 문서의 production override를 함께 사용합니다.
 
-프로젝트는 요청에 적힌 저장소 경로와 실제 작업 폴더가 달랐기 때문에 `<workspace-root>\queueflow`에 별도 생성했습니다. 기존 `github-portfolio` remote는 `Arkite124/portfolio`이고 수정하지 않았습니다. `git ls-remote https://github.com/Arkite124/queueflow.git HEAD refs/heads/*`는 성공했으며 refs가 없는 빈 저장소로 관측되었습니다. 새 로컬 브랜치 `feat/queueflow-core`와 해당 origin만 설정했고 커밋/push는 하지 않았습니다.
+홈 PC checkout은 `<workspace-root>\queueflow`, 저장소는 `Arkite124/queueflow`입니다. 초기 구현은 main의 `96400b2`, 인증과 배포 검증을 포함한 후속 구현은 `feat/release-readiness`의 `bfe6764`와 그 이후 인계 문서 커밋에 있습니다.
 
 ```powershell
 Set-Location <workspace-root>\queueflow
