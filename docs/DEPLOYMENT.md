@@ -2,7 +2,7 @@
 
 ## 로컬 전제와 충돌
 
-현재 작업 PC는 Windows 11이며 Python 3.13.7과 Node 24.22.1을 기존 `.tools`에서 확인했습니다. Docker CLI/Desktop과 사용 가능한 WSL 배포판은 없습니다. 따라서 Compose 기동은 미검증입니다. 포트 조회에서는 8100/5173/5432/6379의 기존 listener를 발견하지 못했으나 일부 시스템 조회가 제한될 수 있으므로 실제 기동 전 다시 확인하세요.
+현재 작업 PC는 Windows 11이며 Python 3.13.7과 Node 24.22.1을 기존 `.tools`에서 확인했습니다. 후속 요청으로 Docker Desktop을 D드라이브에 설치했고 세 가지 Compose 구성을 실제 CLI로 검증했습니다. WSL/가상화 기능 활성화 후 Windows 재부팅이 필요해 엔진 기동은 아직 남았습니다. [최신 배포 조건](TESTING.md)을 우선 확인하세요. 포트 조회에서는 8100/5173/5432/6379의 기존 listener를 발견하지 못했으나 실제 기동 전 다시 확인하세요.
 
 프로젝트는 요청에 적힌 저장소 경로와 실제 작업 폴더가 달랐기 때문에 `<workspace-root>\queueflow`에 별도 생성했습니다. 기존 `github-portfolio` remote는 `Arkite124/portfolio`이고 수정하지 않았습니다. `git ls-remote https://github.com/Arkite124/queueflow.git HEAD refs/heads/*`는 성공했으며 refs가 없는 빈 저장소로 관측되었습니다. 새 로컬 브랜치 `feat/queueflow-core`와 해당 origin만 설정했고 커밋/push는 하지 않았습니다.
 
@@ -57,6 +57,6 @@ docker compose exec api python -m scripts.maintenance resume
 
 `frontend/public/_redirects`가 `/* /index.html 200`을 포함하므로 Pages 배포 시 클라이언트 라우트 새로고침을 준비합니다. 로컬 Vite의 `/new` 직접 요청은 HTTP 200을 확인했지만 실제 Pages 라우팅은 미검증입니다. Pages는 정적 React만 호스팅하며 FastAPI/PostgreSQL/Redis/worker는 별도 Windows 서버의 Docker Compose에서 실행합니다.
 
-현재는 **인증 미구현으로 Tunnel 공개 연결을 실행하면 안 됩니다**. 후속 순서는 인증·owner 권한·관리자 범위 분리 → 실제 격리 복구 테스트 → 비밀키/HTTPS/CORS·파일 보존·quota 설정 → QueueFlow API용 Tunnel ingress 검토 → 별도 Pages 프로젝트의 프론트엔드 연결입니다. 기존 Tunnel 전체 구성을 덮어쓰지 말고 별도 API hostname 항목만 검토해야 합니다.
+초대 계정·owner 권한·관리자 범위 분리는 추가했으나 **운영 적용 전 검증은 미완료**입니다. 후속 순서는 재부팅 후 실제 격리 복구/인증 테스트 → HTTPS cookie와 CORS·파일 보존·quota 확인 → CPU/RAM 실측과 자원 한도 검토 → QueueFlow API용 Tunnel ingress 검토입니다. 기존 Tunnel 전체 구성을 덮어쓰지 말고 별도 API hostname 항목만 검토해야 합니다. 프론트 Pages는 사용자 승인으로 이미 등록했고 최초 배포 성공을 화면에서 확인했습니다.
 
-사용자 승인이 필요한 후속 작업: 원격 push/main 병합, Pages 프로젝트 생성/배포, DNS 변경, 기존 Tunnel 설정 변경, 운영 서버에 Compose 적용/재시작. 이번 작업에서는 모두 수행하지 않았습니다.
+초기 main push와 Pages 등록은 사용자 승인 이후 진행했습니다. 새 변경의 main 병합/운영 배포, DNS 변경, 기존 Tunnel 변경, 운영 서버 Compose 적용/재시작은 별도 승인 범위입니다. 이번 후속 작업에서는 기존 운영 서버에 적용하거나 재시작하지 않았습니다.

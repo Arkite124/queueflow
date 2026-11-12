@@ -32,7 +32,8 @@ def same_request(job, metadata, options):
     return job
 
 
-def create_job(sessions, settings, storage, job_id, filename, metadata, options, idempotency_key):
+def create_job(sessions, settings, storage, job_id, filename, metadata, options, idempotency_key, owner_id=None):
+    owner_id = owner_id or settings.owner_id
     opts = options.model_dump()
     try:
         with sessions.begin() as session:
@@ -41,16 +42,19 @@ def create_job(sessions, settings, storage, job_id, filename, metadata, options,
                 session.execute(text("SELECT pg_advisory_xact_lock(74389201)"))
             if idempotency_key:
                 existing = session.scalar(select(Job).where(
-                    Job.owner_id == settings.owner_id, Job.idempotency_key == idempotency_key))
+                    Job.owner_id == owner_id, Job.idempotency_key == idempotency_key))
                 if existing:
                     return same_request(existing, metadata, opts)
             active = session.scalar(select(func.count()).select_from(Job).where(Job.status.not_in(TERMINAL)))
+            owner_active = session.scalar(select(func.count()).select_from(Job).where(
+                Job.status.not_in(TERMINAL), Job.owner_id == owner_id))
             # Reserve worst-case output across all attempts; admission includes orphan bytes on disk.
             reservation = (active + 1) * settings.max_attempts * 64 * 1024 * 1024
-            if active >= settings.max_active_jobs or storage.usage() + reservation > settings.max_storage_bytes:
+            if (active >= settings.max_active_jobs or owner_active >= settings.max_active_jobs_per_owner
+                    or storage.usage() + reservation > settings.max_storage_bytes):
                 raise CapacityExceeded("Active job or storage budget exceeded")
             now = db_now(session)
-            job = Job(id=job_id, owner_id=settings.owner_id, original_filename=filename,
+            job = Job(id=job_id, owner_id=owner_id, original_filename=filename,
                       input_file_path=metadata["storage_key"], file_size=metadata["file_size"],
                       file_hash=metadata["checksum"], processing_options=opts,
                       idempotency_key=idempotency_key, created_at=now, max_attempts=settings.max_attempts)
@@ -65,7 +69,7 @@ def create_job(sessions, settings, storage, job_id, filename, metadata, options,
             raise
         with sessions() as session:
             existing = session.scalar(select(Job).where(
-                Job.owner_id == settings.owner_id, Job.idempotency_key == idempotency_key))
+                Job.owner_id == owner_id, Job.idempotency_key == idempotency_key))
             if existing is None:
                 raise
             return same_request(existing, metadata, opts)

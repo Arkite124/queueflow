@@ -60,6 +60,6 @@ DB 커밋 응답 유실은 성공/실패를 단정할 수 없습니다. API는 �
 
 ## MVP와 후속 범위
 
-현재 구현: 여러 독립 CSV 작업의 병렬 워커 처리, 폴링 UI, 로컬 운영 도구. 미검증: 실제 PostgreSQL 잠금, Redis XAUTOCLAIM, Linux 컨테이너 및 서버 재시작. 후속: 인증, 객체 저장소, 디스크 기반 중복 키, stream/DB 이력 보존 정책, CPU·메모리 운영 telemetry, 자동 retention 스케줄링.
+현재 구현: 여러 독립 CSV 작업의 병렬 워커 처리, 폴링 UI, 로컬 운영 도구, 초대 계정·사용자별 접근 제어. 초기 커밋의 PostgreSQL/Redis 테스트 CI 단계는 성공했습니다. 새 인증 migration과 실제 홈 PC 컨테이너·전체 재시작·HTTPS 브라우저 검증은 [배포 조건](TESTING.md)에 남아 있습니다. 후속: 객체 저장소, 디스크 기반 중복 키, stream/DB 이력 보존 정책, 지속적인 CPU·메모리 운영 telemetry, 자동 retention 스케줄링. 현재 수동 Docker 자원 수집 도구는 제공하지만 실측은 재부팅 후 진행해야 합니다.
 
 공식 참고: [SQLAlchemy transaction/session](https://docs.sqlalchemy.org/en/20/orm/session_basics.html), [Redis XAUTOCLAIM](https://redis.io/docs/latest/commands/xautoclaim/), [FastAPI file uploads](https://fastapi.tiangolo.com/tutorial/request-files/).

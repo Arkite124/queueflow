@@ -9,6 +9,11 @@ x-app: &app
     REDIS_URL: redis://redis:6379/0
     STORAGE_ROOT: /data
     CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+    DEPLOYMENT_MODE: ${DEPLOYMENT_MODE:-local}
+    AUTH_MODE: ${AUTH_MODE:-local}
+    COOKIE_SECURE: ${COOKIE_SECURE:-false}
+    SESSION_SECONDS: ${SESSION_SECONDS:-28800}
+    MAX_ACTIVE_JOBS_PER_OWNER: ${MAX_ACTIVE_JOBS_PER_OWNER:-4}
     MAX_FILE_BYTES: ${MAX_FILE_BYTES:-20971520}
     MAX_ROWS: ${MAX_ROWS:-100000}
     MAX_ACTIVE_JOBS: ${MAX_ACTIVE_JOBS:-100}
@@ -73,7 +78,7 @@ services:
       migrate: {condition: service_completed_successfully}
       redis: {condition: service_healthy}
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8100/ready', timeout=4)"]
+      test: ["CMD", "python", "-m", "scripts.readiness"]
       interval: 10s
       timeout: 5s
       retries: 5

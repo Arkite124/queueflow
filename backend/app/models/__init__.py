@@ -1,3 +1,3 @@
-from .tables import Artifact, Attempt, Base, Event, Job, Outbox, WorkerHeartbeat
+from .tables import Artifact, Attempt, Base, Event, Job, LoginSession, Outbox, User, WorkerHeartbeat
 
-__all__ = ["Artifact", "Attempt", "Base", "Event", "Job", "Outbox", "WorkerHeartbeat"]
+__all__ = ["Artifact", "Attempt", "Base", "Event", "Job", "LoginSession", "Outbox", "User", "WorkerHeartbeat"]

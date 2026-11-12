@@ -81,10 +81,17 @@ def processor_benchmark(rows, repeats, output):
                           "results": results})
 
 
-def api_benchmark(base_url, rows, jobs, expected_workers, output):
+def api_benchmark(base_url, rows, jobs, expected_workers, output, username=None):
     base_url = base_url.rstrip("/")
-    start = time.perf_counter()
     with httpx.Client(base_url=base_url, timeout=60) as client:
+        if username:
+            import getpass
+            response = client.post("/api/v1/auth/login", json={"username": username, "password": getpass.getpass("Password: ")})
+            response.raise_for_status()
+            login = response.json()
+            if not login["user"]["is_admin"]:
+                raise SystemExit("Worker benchmarking requires an invited administrator account")
+            client.headers["X-CSRF-Token"] = login["csrf_token"]
         before = client.get("/api/v1/stats").raise_for_status().json()
         actual_workers = len([w for w in before["workers"] if w["online"]])
         if actual_workers != expected_workers:
@@ -99,6 +106,7 @@ def api_benchmark(base_url, rows, jobs, expected_workers, output):
                     response.raise_for_status()
                     return response.json()["job_id"]
 
+            start = time.perf_counter()  # exclude local CSV generation and login from service wall time
             with ThreadPoolExecutor(max_workers=min(jobs, 4)) as pool:
                 ids = list(pool.map(submit, range(jobs)))
             pending = set(ids)
@@ -164,6 +172,7 @@ def main():
     parser.add_argument("--rows", type=int, nargs="+", choices=[1000, 10000, 100000], default=[1000, 10000, 100000])
     parser.add_argument("--repeats", type=int, default=3)
     parser.add_argument("--api-url", default="http://localhost:8100")
+    parser.add_argument("--username", help="Optional invited administrator; password is read privately from terminal")
     parser.add_argument("--jobs", type=int, default=3)
     parser.add_argument("--workers", type=int, choices=[1, 2, 3, 4], default=1)
     parser.add_argument("--output", type=Path, default=Path("output/benchmark.json"))
@@ -173,7 +182,7 @@ def main():
     if args.mode == "processor":
         processor_benchmark(args.rows, args.repeats, args.output)
     else:
-        api_benchmark(args.api_url, args.rows[0], args.jobs, args.workers, args.output)
+        api_benchmark(args.api_url, args.rows[0], args.jobs, args.workers, args.output, args.username)
 
 
 if __name__ == "__main__":

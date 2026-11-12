@@ -2,9 +2,9 @@
 
 ## 현재 신뢰 경계
 
-이 버전은 **로컬 단일 사용자 개발용**입니다. API와 선택적 정적 프론트엔드는 Compose에서 127.0.0.1에만 바인딩합니다. PostgreSQL/Redis는 호스트 포트를 열지 않습니다. CORS는 명시된 localhost 프론트엔드만 허용하지만 CORS를 인증이나 권한 관리의 대체로 취급하지 않습니다. 내부 owner 필터는 고정 `local` 범위이며 실제 로그인/사용자 분리는 미구현입니다.
+기본 모드는 **로컬 단일 사용자 개발용**입니다. API와 선택적 정적 프론트엔드는 Compose에서 127.0.0.1에만 바인딩합니다. PostgreSQL/Redis는 호스트 포트를 열지 않습니다. 후속 session 모드는 관리자 CLI로 초대한 계정과 사용자별 owner를 사용합니다. CORS는 인증 대체 수단이 아니며 세션·소유권·CSRF를 별도로 검사합니다. [인증 설계와 검증 범위](AUTHENTICATION.md)를 보세요.
 
-현재 상태로 Tunnel을 연결하거나 공개 API를 열지 마세요. 공개 데모 전에 인증 세션, 서버에서 결정한 owner, 다운로드를 포함한 권한 검사, 관리자 전용 운영 지표, 분산 rate limit, TLS와 운영 비밀키 관리가 필요합니다. 기존 포트폴리오 API·DNS·Tunnel·Windows 스케줄러는 변경하지 않았습니다.
+로그인·서버 owner 결정·파일 권한·관리자 운영 지표 분리 코드는 추가했지만 실제 홈 PC 컨테이너/HTTPS cookie/운영 서버 자원 검증은 아직 남았습니다. 이 조건을 확인하기 전에 Tunnel로 공개하지 않습니다. 분산 rate limit, TLS와 운영 설정 관리도 검토해야 합니다. 기존 포트폴리오 API·DNS·Tunnel·Windows 스케줄러는 변경하지 않았습니다.
 
 ## 입력·출력
 
@@ -30,4 +30,4 @@
 
 수동 `npm audit`와 고정 Python 35개 버전의 PyPI release metadata 조회를 수행했습니다. 발견된 취약점을 패치한 최종 결과는 npm 공지 0건, Python 공지 취약점 포함 패키지 0개입니다. 이는 조회 시점 공지 기준이며 전체 보안성을 보장하지 않습니다. lint 도구의 minimatch는 11.0.8을 사용하는 부모 패키지에만 override했습니다. CI에도 npm/PyPI 감사 단계를 작성했지만 원격 실행은 하지 않았습니다.
 
-암호화 파일 저장, 악성 콘텐츠 스캔, 로그인, 사용자별 저장 quota, 자동 retention 스케줄은 제공하지 않습니다. 운영 전 image digest 고정과 지속적인 dependency/image audit가 필요합니다.
+암호화 파일 저장, 악성 콘텐츠 스캔, 사용자별 강제 디스크 quota, 자동 retention 스케줄은 제공하지 않습니다. 초대 계정 로그인과 사용자별 활성 작업 제한은 추가했습니다. 운영 전 image digest 고정과 지속적인 dependency/image audit가 필요합니다.

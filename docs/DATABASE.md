@@ -10,6 +10,8 @@
 | job_artifacts | 입력/정제/오류/요약의 크기·SHA-256·저장 키 | job FK, `(job_id,artifact_type)` UNIQUE |
 | outbox_events | JOB / DEAD_LETTER 전달 의도와 발행 시각 | job FK, published+created 인덱스 |
 | worker_heartbeats | 워커별 마지막 관측·현재 작업 | worker_id PK |
+| users | 관리자가 초대한 계정, 비밀번호 hash, 역할·활성·실패 잠금 | username UNIQUE |
+| login_sessions | opaque token의 hash, user FK, CSRF token, 만료 | token hash PK, user/expiry 인덱스 |
 
 시각은 UTC epoch double로 저장하고 API에서는 ISO-8601로 반환합니다. 소유권 판단은 PostgreSQL `clock_timestamp()`를 사용합니다. SQLite 단위 테스트에서만 호스트 시간을 사용합니다. 토큰과 실행 시도는 작업 행 잠금 안에서 증가합니다.
 
@@ -34,5 +36,7 @@ alembic -c backend/alembic.ini upgrade head --sql
 ```
 
 `0001_initial.py`는 고정된 초기 스키마이며 모델을 import하여 매 실행 시 바뀌는 migration이 아닙니다. API/워커 시작 시 `create_all`, drop/reset을 수행하지 않습니다. `Base.metadata.create_all`은 SQLite 단위 테스트에만 사용합니다. 통합 테스트는 고유 PostgreSQL 스키마에 실제 Alembic을 실행하고 모델과 schema drift를 비교하도록 작성했습니다. 이 통합 테스트는 현재 미실행입니다.
+
+후속 `0002_invited_accounts.py`는 기존 작업을 변경하지 않고 초대 계정·세션 테이블을 추가합니다. 초기 0001의 통합 테스트 CI 단계는 성공했으며 0002를 포함한 홈 PC 재실행은 [배포 조건](TESTING.md)에 따라 진행합니다. 기존 local 소유 작업을 새 계정으로 자동 이관하지 않습니다.
 
 현재 DB 이벤트/Outbox 이력은 자동 삭제하지 않습니다. 운영 규모에서 아카이빙·파티셔닝·보존기간이 필요합니다. 백업 시 DB와 파일 볼륨의 일관된 복구 지점을 관리해야 합니다.

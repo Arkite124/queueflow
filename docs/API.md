@@ -1,11 +1,14 @@
 # HTTP API v1
 
-인증 없는 localhost 단일 사용자 API입니다. owner는 서버의 고정 `local` 범위이며 클라이언트가 임의 owner 헤더로 바꿀 수 없습니다. 공개 다중 사용자 권한 보장을 제공하지 않습니다. 모든 오류는 `{"error":{"code":"...","message":"..."}}`이며 내부 경로·SQL·CSV 값·traceback을 노출하지 않습니다.
+기본 local 모드는 localhost 단일 사용자입니다. 초대 데모의 session 모드는 로그인 계정의 UUID를 owner로 사용하며 클라이언트가 임의 owner 헤더로 바꿀 수 없습니다. 변경 요청에는 세션의 X-CSRF-Token이 필요합니다. 공개 회원가입은 없습니다. 상세 모드는 [인증 문서](AUTHENTICATION.md)를 참고하세요. 모든 오류는 `{"error":{"code":"...","message":"..."}}`이며 내부 경로·SQL·CSV 값·traceback을 노출하지 않습니다.
 
 | 메서드 / 경로 | 동작 |
 |---|---|
 | GET /health | API 프로세스 응답. worker 가용성을 뜻하지 않음 |
-| GET /ready | DB/migration, Redis, storage, accepting_jobs 체크. 준비 안 되면 503 |
+| GET /ready | 관리자만 DB/migration, Redis, storage, accepting_jobs 체크. 준비 안 되면 503 |
+| GET /api/v1/auth/me | 현재 계정·역할·CSRF token·모드. 미로그인은 401 |
+| POST /api/v1/auth/login | 초대 계정 JSON username/password → HttpOnly cookie, 계정/CSRF 응답 |
+| POST /api/v1/auth/logout | 현재 세션 폐기. CSRF 필수 |
 | POST /api/v1/jobs | multipart `file`, optional `options` JSON 문자열, optional `Idempotency-Key`; 영속 등록 후 202 |
 | GET /api/v1/jobs | `status`, `q`, `limit` 1–100, `offset` 0–100000. `{items,total,limit,offset}` |
 | GET /api/v1/jobs/{uuid} | 상태·실제 행 수·옵션·시각·최대 3개 시도 이력 |
@@ -14,6 +17,8 @@
 | GET /api/v1/jobs/{uuid}/artifacts | 공개 metadata와 download_url. 내부 storage_key는 제외 |
 | GET /api/v1/jobs/{uuid}/artifacts/{type} | input / cleaned / errors / summary. attachment, nosniff, no-store |
 | GET /api/v1/stats | DB 상태별 개수·평균 처리시간·실제 heartbeat·큐 관측·최근 복구/실패 |
+
+session 모드에서는 작업과 파일 API가 모두 로그인을 요구하고, 목록·집계·다운로드·취소는 해당 계정 범위입니다. 운영 worker/Redis 정보는 관리자에게만 반환합니다. 로그인 실패/만료는 401, CSRF/관리자 권한 실패는 403이며 다른 계정의 작업은 존재를 구분하지 않는 404입니다.
 
 ## 등록과 오류
 

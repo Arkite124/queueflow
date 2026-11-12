@@ -1,0 +1,32 @@
+# Apply only in a new, dedicated QueueFlow deployment after local release checks.
+# Start with ONE worker. Measure host/VM/container use before increasing scale.
+services:
+  postgres:
+    mem_limit: 512m
+    cpus: 0.75
+    command: ["postgres", "-c", "shared_buffers=128MB", "-c", "max_connections=60"]
+  redis:
+    mem_limit: 192m
+    cpus: 0.25
+  api:
+    mem_limit: 256m
+    cpus: 0.75
+    environment:
+      DEPLOYMENT_MODE: public
+      AUTH_MODE: session
+      COOKIE_SECURE: "true"
+      CORS_ORIGINS: ${PUBLIC_FRONTEND_ORIGIN:-https://queueflow.youngjoong.dev}
+      RETENTION_HOURS: "24"
+      MAX_ACTIVE_JOBS: "8"
+      MAX_ACTIVE_JOBS_PER_OWNER: "2"
+  dispatcher:
+    mem_limit: 192m
+    cpus: 0.25
+    environment:
+      RETENTION_HOURS: "24"
+  worker:
+    mem_limit: 256m
+    cpus: 0.75
+  frontend:
+    mem_limit: 64m
+    cpus: 0.25

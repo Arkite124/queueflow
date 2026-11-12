@@ -30,6 +30,7 @@ class Stack:
         self.port = free_port()
         self.environment = os.environ.copy()
         self.environment.update(API_PORT=str(self.port), POSTGRES_PASSWORD="isolated_recovery_only",
+                                AUTH_MODE="local", DEPLOYMENT_MODE="local", COOKIE_SECURE="false",
                                 LEASE_SECONDS="4", HEARTBEAT_SECONDS="0.5", RECLAIM_IDLE_MS="4000",
                                 RETRY_BASE_SECONDS="0.5", RECONCILE_SECONDS="1", MAX_STORAGE_BYTES=str(2 * 1024**3))
         self.set_fault("none")
@@ -39,10 +40,31 @@ class Stack:
         self.override.write_text(json.dumps({"services": {"worker": {"environment": {
             "QUEUEFLOW_TEST_MODE": "1", "QUEUEFLOW_TEST_FAULT": point, "QUEUEFLOW_TEST_ROW_DELAY": "0.025"}}}}))
 
-    def compose(self, *args):
+    def compose(self, *args, input_text=None):
         return subprocess.run(["docker", "compose", "--project-name", self.project, "-f", str(ROOT / "docker-compose.yml"),
                                "-f", str(self.override), *args], cwd=ROOT, env=self.environment,
-                              check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout
+                              check=True, text=True, input=input_text,
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout
+
+    def wait_health(self):
+        deadline = time.monotonic() + 90
+        while time.monotonic() < deadline:
+            try:
+                if self.client.get("/health").status_code == 200:
+                    return
+            except httpx.HTTPError:
+                pass
+            time.sleep(0.25)
+        raise RuntimeError("API process did not start")
+
+    def provision(self, username, password, admin=False):
+        code = ("import json,sys; from backend.app.core.config import Settings; "
+                "from backend.app.core.db import make_engine,make_sessions; "
+                "from backend.app.services.auth import provision_user; "
+                "s=Settings(); p=json.load(sys.stdin); "
+                "provision_user(make_sessions(make_engine(s.database_url)),p['username'],p['password'],p['admin'])")
+        self.compose("exec", "-T", "api", "python", "-c", code,
+                     input_text=json.dumps({"username": username, "password": password, "admin": admin}))
 
     def wait_ready(self):
         deadline = time.monotonic() + 180
@@ -157,6 +179,31 @@ def main():
             stack.compose("stop", "--timeout", "180", "worker")
             stack.wait_job(graceful)
             results.append({"scenario": "graceful-worker-stop", "result": "PASS"})
+
+            # Test real HTTP authentication in this loopback-only project. Secure-cookie
+            # behavior is separately tested over HTTPS TestClient; public config forces Secure.
+            stack.environment["AUTH_MODE"] = "session"
+            stack.compose("up", "-d", "--no-deps", "--force-recreate", "api", "worker")
+            stack.wait_health()
+            import secrets
+            secret = secrets.token_urlsafe(32)
+            stack.provision("test-admin", secret, True)
+            stack.provision("test-viewer", secret)
+            assert stack.client.get("/api/v1/jobs").status_code == 401
+            login = stack.client.post("/api/v1/auth/login", json={"username": "test-admin", "password": secret})
+            login.raise_for_status()
+            stack.client.headers["X-CSRF-Token"] = login.json()["csrf_token"]
+            owned_job = stack.submit(small)["job_id"]
+            stack.wait_job(owned_job)
+            with httpx.Client(base_url=str(stack.client.base_url), timeout=30) as viewer:
+                response = viewer.post("/api/v1/auth/login", json={"username": "test-viewer", "password": secret})
+                response.raise_for_status()
+                assert viewer.get(f"/api/v1/jobs/{owned_job}/artifacts/cleaned").status_code == 404
+                assert viewer.get("/api/v1/jobs").json()["total"] == 0
+                assert viewer.get("/ready").status_code == 403
+            assert stack.client.post("/api/v1/auth/logout").status_code == 200
+            assert stack.client.get("/api/v1/jobs").status_code == 401
+            results.append({"scenario": "invited-authentication-owner-isolation-local-http", "result": "PASS"})
         except Exception as exc:
             results.append({"scenario": "runner", "result": "FAIL", "error_type": type(exc).__name__})
             raise

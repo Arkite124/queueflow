@@ -9,4 +9,4 @@
 - Use Alembic migrations. Never reset databases or delete Docker volumes as routine setup.
 - Run unit tests, frontend lint/build and isolated PostgreSQL/Redis tests where available.
 - Report skipped infrastructure checks explicitly. Never invent benchmark numbers.
-- Do not push, publish, modify DNS/tunnels, restart existing services, or edit OS schedules.
+- Push only with user authorization. Do not merge main, publish, modify DNS/tunnels, restart existing services, or edit OS schedules without specific authorization.

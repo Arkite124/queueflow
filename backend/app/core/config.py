@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
+from urllib.parse import urlsplit
 
 
 @dataclass
@@ -10,6 +11,11 @@ class Settings:
     redis_url: str = field(default_factory=lambda: os.getenv("REDIS_URL", "redis://localhost:6379/0"))
     storage_root: Path = field(default_factory=lambda: Path(os.getenv("STORAGE_ROOT", "data")))
     owner_id: str = "local"
+    deployment_mode: str = field(default_factory=lambda: os.getenv("DEPLOYMENT_MODE", "local"))
+    auth_mode: str = field(default_factory=lambda: os.getenv("AUTH_MODE", "local"))
+    cookie_secure: bool = field(default_factory=lambda: os.getenv("COOKIE_SECURE", "false").lower() == "true")
+    session_seconds: int = field(default_factory=lambda: int(os.getenv("SESSION_SECONDS", "28800")))
+    max_active_jobs_per_owner: int = field(default_factory=lambda: int(os.getenv("MAX_ACTIVE_JOBS_PER_OWNER", "4")))
     stream: str = "queueflow:jobs"
     dead_letter_stream: str = "queueflow:dead-letter"
     group: str = "queueflow-workers"
@@ -33,6 +39,16 @@ class Settings:
     drain_file: str = ".drain"
 
     def __post_init__(self):
+        if self.deployment_mode not in {"local", "public"} or self.auth_mode not in {"local", "session"}:
+            raise ValueError("Invalid deployment or authentication mode")
+        if not 300 <= self.session_seconds <= 86400:
+            raise ValueError("SESSION_SECONDS must be between 300 and 86400")
+        if self.deployment_mode == "public":
+            if self.auth_mode != "session" or not self.cookie_secure:
+                raise ValueError("Public deployment requires session authentication and Secure cookies")
+            if not self.cors_origins or any(urlsplit(origin).scheme != "https" or not urlsplit(origin).hostname
+                                            or urlsplit(origin).path or "*" in origin for origin in self.cors_origins):
+                raise ValueError("Public deployment requires exact HTTPS frontend origins")
         if self.heartbeat_seconds * 2 >= self.lease_seconds:
             raise ValueError("LEASE_SECONDS must exceed twice HEARTBEAT_SECONDS")
         if min(self.max_file_bytes, self.max_rows, self.max_attempts, self.max_storage_bytes) <= 0:
