@@ -1,15 +1,25 @@
 @import "tailwindcss";
 
+/* SUIT by SUNN, SIL OFL 1.1. See /fonts/SUIT-OFL.txt. */
+@font-face {
+  font-family: "SUIT Variable";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/SUIT-Variable.woff2") format("woff2");
+}
+
 :root {
-  font-family: Inter, "Segoe UI", "Malgun Gothic", sans-serif;
+  font-family: "SUIT Variable", system-ui, sans-serif;
   color: #f4f0ff;
   background: #0b0b21;
   color-scheme: dark;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  font-size: 14px;
-  line-height: 1.65;
+  font-size: 15px;
+  line-height: 1.6;
+  letter-spacing: -0.015em;
   --text-muted: #b4accd;
   --text-subtle: #a398bf;
   --line: rgb(211 190 255 / 13%);
@@ -45,11 +55,11 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
   outline-offset: 4px;
 }
 h1, h2, h3, p { margin-top: 0; }
-h1 { font-size: clamp(25px, 2.25vw, 34px); line-height: 1.4; letter-spacing: -1.3px; font-weight: 650; margin-bottom: 10px; overflow-wrap: anywhere; }
-h2 { font-size: 16px; font-weight: 650; letter-spacing: -0.35px; margin-bottom: 18px; }
+h1 { font-size: clamp(25px, 2vw, 30px); line-height: 1.4; letter-spacing: -0.035em; font-weight: 650; margin-bottom: 10px; overflow-wrap: anywhere; }
+h2 { font-size: 17px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 18px; }
 h3 { font-size: 17px; }
 .muted { color: var(--text-muted); }
-.small { font-size: 12px; }
+.small { font-size: 13px; }
 .mono, code, pre { font-family: "Cascadia Code", Consolas, monospace; font-size: 12px; }
 .nowrap { white-space: nowrap; }
 
@@ -78,8 +88,7 @@ h3 { font-size: 17px; }
   border-radius: 28px 0 0 28px;
   background: linear-gradient(160deg, rgb(106 43 135 / 18%), rgb(15 15 37 / 60%) 60%);
 }
-.brand { display: flex; gap: 12px; align-items: center; padding: 0 8px 29px; font-size: 23px; font-weight: 700; letter-spacing: -0.8px; }
-.brand small { display: block; font-size: 8px; letter-spacing: 2.1px; font-weight: 550; color: #b5a5d5; margin-top: 1px; }
+.brand { display: flex; gap: 12px; align-items: center; padding: 0 8px 29px; font-size: 24px; font-weight: 650; letter-spacing: -0.03em; }
 .brand-symbol {
   width: 40px;
   height: 40px;
@@ -96,32 +105,32 @@ h3 { font-size: 17px; }
 }
 .workspace-label { display: flex; gap: 11px; align-items: center; padding: 21px 8px; border-block: 1px solid var(--line); font-size: 12px; overflow-wrap: anywhere; }
 .workspace-icon { flex-shrink: 0; border: 1px solid rgb(203 171 255 / 35%); background: linear-gradient(145deg, #54407a, #282044); box-shadow: inset 0 1px 0 rgb(255 255 255 / 13%); border-radius: 11px; width: 36px; height: 38px; display: grid; place-items: center; color: #e0ccff; }
-.workspace-label small { display: block; font-size: 10px; color: var(--text-subtle); margin-top: 3px; }
-.nav-caption { font-size: 10px; color: #a398bf; letter-spacing: 1.9px; margin: 31px 12px 11px; }
-nav > a { display: flex; align-items: center; gap: 13px; padding: 13px 14px; margin: 6px 0; border: 1px solid transparent; border-radius: 12px; font-size: 13px; color: #c2b8d9; }
+.workspace-label small { display: block; font-size: 12px; color: var(--text-subtle); margin-top: 3px; }
+.nav-caption { font-size: 12px; color: #a398bf; margin: 26px 14px 9px; }
+nav > a { display: flex; align-items: center; gap: 13px; padding: 13px 14px; margin: 6px 0; border: 1px solid transparent; border-radius: 12px; font-size: 14px; color: #c2b8d9; }
 nav > a > span { font-size: 20px; width: 20px; text-align: center; color: #c59af6; }
 nav > a.active { background: linear-gradient(115deg, #7032ac, #7632a1 55%, #9a378f); color: white; border-color: rgb(234 161 255 / 28%); box-shadow: 0 6px 18px rgb(14 6 31 / 32%), inset 0 1px 0 rgb(255 255 255 / 15%); }
 nav > a.active > span { color: #efd7ff; }
 nav > a:hover { border-color: rgb(211 175 255 / 22%); background-color: rgb(177 121 255 / 9%); color: white; }
-.sidebar-footer { margin-top: auto; font-size: 10px; letter-spacing: 1.2px; color: #c9b8e4; padding: 28px 10px 0; }
+.sidebar-footer { margin-top: auto; font-size: 12px; color: #c9b8e4; padding: 28px 10px 0; }
 .sidebar-footer small { display: block; color: var(--text-subtle); letter-spacing: 0; margin-top: 10px; }
 .signal { display: inline-block; width: 7px; height: 7px; background: #46dfc0; border-radius: 50%; box-shadow: 0 0 10px rgb(70 223 192 / 45%); margin-right: 8px; }
 .signal.amber { background: var(--amber); box-shadow: 0 0 10px rgb(246 188 115 / 35%); }
 .main-shell { flex: 1; min-width: 0; }
 .topbar { min-height: 78px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 16px 34px; font-size: 12px; background: linear-gradient(95deg, transparent, rgb(219 74 171 / 7%)); border-radius: 0 28px 0 0; }
 .account-menu { display: flex; align-items: center; gap: 18px; min-width: 0; }
-.local-tag { font-size: 10px; letter-spacing: 1.1px; border: 1px solid rgb(211 175 255 / 23%); background: rgb(175 116 255 / 7%); border-radius: 8px; padding: 5px 10px; color: #d6c5f0; overflow-wrap: anywhere; }
-main { padding: 32px 34px 0; max-width: 1400px; margin: auto; }
+.local-tag { font-size: 12px; border: 1px solid rgb(211 175 255 / 23%); background: rgb(175 116 255 / 7%); border-radius: 8px; padding: 5px 10px; color: #d6c5f0; overflow-wrap: anywhere; }
+main { padding: 32px 34px; max-width: 1400px; margin: auto; }
 .page-heading { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
 .page-heading .muted { margin: 0; font-size: 12px; line-height: 1.8; }
-.eyebrow { font-size: 10px; letter-spacing: 1.7px; font-weight: 600; color: #c39de7; margin-bottom: 13px; }
+.page-heading h1:last-child { margin-bottom: 0; }
 .button {
   border: 1px solid rgb(234 179 255 / 38%);
   border-radius: 10px;
   background: linear-gradient(120deg, #9149e7, #b43bd0 65%, #cc50ab);
   color: #fff;
   padding: 11px 18px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   display: inline-flex;
   justify-content: center;
@@ -155,7 +164,7 @@ main { padding: 32px 34px 0; max-width: 1400px; margin: auto; }
 .metric:nth-child(4) { background: linear-gradient(145deg, rgb(97 74 184 / 48%), rgb(42 34 87 / 90%)); }
 .metric p, .detail-metrics p { font-size: 12px; color: #d3c4e9; margin-bottom: 12px; }
 .metric strong, .detail-metrics strong { font-size: 35px; font-weight: 650; letter-spacing: -1.2px; display: block; line-height: 1.2; margin-bottom: 15px; font-variant-numeric: tabular-nums; color: #faf5ff; }
-.metric small, .detail-metrics small { font-size: 10px; color: #c0b3d6; display: block; line-height: 1.8; }
+.metric small, .detail-metrics small { font-size: 12px; color: #c0b3d6; display: block; line-height: 1.8; }
 .flow-strip { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px 20px; padding: 13px 17px; background: linear-gradient(100deg, rgb(116 70 172 / 19%), rgb(69 92 150 / 13%)); border: 1px solid var(--line); border-radius: 12px; font-size: 11px; margin-bottom: 24px; }
 .flow-strip strong { margin-right: 15px; font-weight: 550; color: #e2d5f4; }
 .panel { border: 1px solid rgb(211 188 255 / 19%); background: linear-gradient(135deg, rgb(94 65 131 / 35%), rgb(31 29 60 / 93%) 75%); border-radius: 19px; overflow: hidden; margin-bottom: 24px; box-shadow: 0 9px 22px rgb(5 4 22 / 23%), inset 0 1px 0 rgb(255 255 255 / 7%); }
@@ -173,7 +182,7 @@ main { padding: 32px 34px 0; max-width: 1400px; margin: auto; }
 .charts-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 23px; margin-bottom: 24px; }
 .chart-panel { margin-bottom: 0; min-width: 0; }
 .chart-panel .panel-heading { border-bottom: 0; align-items: flex-start; padding-bottom: 8px; }
-.chart-panel .panel-heading p { margin: 6px 0 0; font-size: 10px; }
+.chart-panel .panel-heading p { margin: 6px 0 0; font-size: 12px; }
 .chart-unit { color: var(--text-subtle); font-size: 11px; }
 .bar-chart { display: flex; height: 226px; gap: 15px; margin: 14px 26px 23px 21px; }
 .chart-scale { display: flex; flex-direction: column; justify-content: space-between; color: var(--text-subtle); font-size: 10px; padding-bottom: 30px; min-width: 28px; text-align: right; font-variant-numeric: tabular-nums; }
@@ -183,17 +192,17 @@ main { padding: 32px 34px 0; max-width: 1400px; margin: auto; }
 .chart-bar { width: 100%; height: var(--bar-height); position: relative; border-radius: 16px; background: linear-gradient(180deg, #e4b2ff, #9b4de5 42%, #5623b0); box-shadow: 0 7px 10px rgb(4 2 20 / 42%), inset 3px 0 6px rgb(255 255 255 / 12%), inset 0 1px 0 rgb(255 255 255 / 38%); }
 .chart-column:nth-child(3n + 2) .chart-bar { background: linear-gradient(180deg, #ffe19d, #f0a262 35%, #bb426a); border-color: rgb(255 219 168 / 35%); }
 .chart-column:nth-child(3n) .chart-bar { background: linear-gradient(180deg, #96f1e1, #34c8df 42%, #1772d2); border-color: rgb(147 239 246 / 35%); }
-.bar-value { position: absolute; bottom: calc(100% + 9px); left: 50%; transform: translateX(-50%); color: #e8def6; font-size: 10px; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.bar-label { display: block; height: 30px; padding-top: 12px; color: var(--text-muted); font-size: 9px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; text-align: center; }
+.bar-value { position: absolute; bottom: calc(100% + 9px); left: 50%; transform: translateX(-50%); color: #e8def6; font-size: 11px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.bar-label { display: block; height: 30px; padding-top: 10px; color: var(--text-muted); font-size: 11px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; text-align: center; }
 .distribution-chart { display: flex; align-items: center; justify-content: center; gap: 27px; min-height: 263px; padding: 15px 26px 28px; }
 .donut-chart { width: 174px; height: 174px; flex-shrink: 0; position: relative; border-radius: 50%; background: var(--donut-fill); border: 1px solid rgb(237 207 255 / 32%); box-shadow: 0 12px 17px rgb(5 2 25 / 45%), inset 0 2px 5px rgb(255 255 255 / 36%); }
 .donut-chart::before { content: ""; position: absolute; inset: 15px; border-radius: 50%; border: 1px solid rgb(234 208 255 / 35%); background: linear-gradient(145deg, #51426d, #241d3e); box-shadow: inset 0 6px 10px rgb(8 5 25 / 50%), 0 1px 2px rgb(255 255 255 / 15%); }
 .donut-chart.no-data { background: linear-gradient(135deg, #5b457b, #3c345b); }
 .donut-center { position: absolute; inset: 25px; border: 1px solid rgb(211 188 255 / 14%); border-radius: 50%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(ellipse at top, #44315f, #19172e 85%); box-shadow: 0 0 0 4px rgb(17 14 36 / 21%); }
 .donut-center strong { font-size: 33px; line-height: 1.3; font-weight: 650; letter-spacing: -1.5px; }
-.donut-center span { margin-top: 5px; color: #cfc0e1; font-size: 10px; }
+.donut-center span { margin-top: 5px; color: #cfc0e1; font-size: 12px; }
 .chart-legend { list-style: none; margin: 0; padding: 0; flex: 1; max-width: 175px; min-width: 110px; }
-.chart-legend li { display: flex; align-items: center; gap: 9px; font-size: 11px; color: #c8bddd; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.chart-legend li { display: flex; align-items: center; gap: 9px; font-size: 12px; color: #c8bddd; padding: 10px 0; border-bottom: 1px solid var(--line); }
 .chart-legend li:last-child { border: 0; }
 .chart-legend strong { margin-left: auto; color: #f4edff; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .legend-dot { width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; }
@@ -205,14 +214,14 @@ main { padding: 32px 34px 0; max-width: 1400px; margin: auto; }
 
 .table-scroll { overflow-x: auto; scrollbar-color: #67508c transparent; scrollbar-width: thin; }
 table { border-collapse: collapse; width: 100%; min-width: 640px; text-align: left; font-size: 12px; }
-th { font-size: 10px; letter-spacing: 0.4px; color: #b2a2cb; background: rgb(11 9 32 / 22%); font-weight: 500; padding: 13px 22px; white-space: nowrap; }
+th { font-size: 12px; color: #b2a2cb; background: rgb(11 9 32 / 22%); font-weight: 500; padding: 13px 22px; white-space: nowrap; }
 td { padding: 19px 22px; border-bottom: 1px solid var(--line); }
 tbody tr:last-child td { border-bottom: 0; }
 tbody tr:hover { background: rgb(177 121 255 / 5%); }
 .file-link { font-size: 12px; display: block; font-weight: 600; max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
 .file-link:hover { color: #d6a5ff; }
 td small { display: block; color: var(--text-subtle); margin-top: 5px; font-size: 10px; }
-.badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border: 1px solid rgb(177 160 204 / 25%); border-radius: 7px; font-size: 9px; letter-spacing: 0.4px; font-weight: 600; white-space: nowrap; background: rgb(129 113 155 / 15%); color: #c5bbd5; }
+.badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border: 1px solid rgb(177 160 204 / 25%); border-radius: 7px; font-size: 12px; font-weight: 550; white-space: nowrap; background: rgb(129 113 155 / 15%); color: #c5bbd5; }
 .badge i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; box-shadow: 0 0 7px currentColor; }
 .badge.succeeded { background: rgb(70 223 192 / 10%); border-color: rgb(70 223 192 / 23%); color: #76e8cb; }
 .badge.running { background: rgb(67 217 237 / 11%); border-color: rgb(67 217 237 / 25%); color: #77e1f2; }
@@ -255,6 +264,10 @@ input[type="file"]::file-selector-button { border: 1px solid rgb(211 188 255 / 2
 .rules { height: 450px; resize: vertical; font-size: 12px; line-height: 1.8; tab-size: 2; color: #c8e3ef; }
 .submit { align-self: flex-start; min-width: 190px; }
 .help-panel { align-self: start; }
+.result-guide { margin: 22px 0; font-size: 13px; }
+.result-guide > div { padding: 13px 0; border-bottom: 1px solid var(--line); }
+.result-guide dt { font-weight: 600; }
+.result-guide dd { margin: 4px 0 0; color: var(--text-muted); }
 .help-panel ol { list-style: decimal; padding-left: 18px; font-size: 12px; margin-top: 26px; }
 .help-panel li { padding-left: 7px; margin-bottom: 23px; }
 .help-panel li::marker { color: #c69bed; }
@@ -308,8 +321,8 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; margin: 
 .session-surface { max-width: 600px; margin: 15vh auto; padding: 24px; }
 .login-page { min-height: 100vh; display: grid; grid-template-columns: 1fr minmax(320px, 440px); gap: 75px; align-items: center; max-width: 1120px; margin: auto; padding: 50px; }
 .login-intro .brand-symbol { margin-bottom: 34px; width: 53px; height: 53px; font-size: 32px; }
-.login-intro h1 { font-size: 39px; line-height: 1.55; letter-spacing: -1.8px; }
-.login-intro > p:last-child { color: var(--text-muted); line-height: 2; font-size: 13px; }
+.login-intro h1 { font-size: 44px; line-height: 1.3; letter-spacing: -0.04em; font-weight: 600; }
+.login-intro > p:last-child { color: var(--text-muted); line-height: 1.9; font-size: 16px; }
 .login-card { margin: 0; padding: 36px; border-radius: 25px; background: linear-gradient(140deg, rgb(133 63 149 / 48%), rgb(37 26 67 / 93%) 65%); box-shadow: 0 22px 55px rgb(3 2 17 / 40%), inset 0 1px 0 rgb(255 255 255 / 16%); backdrop-filter: blur(18px); }
 .login-card h2 { font-size: 24px; }
 .login-card label { margin-top: 22px; }
@@ -342,11 +355,11 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; margin: 
   .donut-chart { width: 145px; height: 145px; }
   .donut-center { inset: 23px; }
   .donut-center strong { font-size: 28px; }
-  .chart-legend { min-width: 85px; }
-  .chart-legend li { gap: 7px; font-size: 10px; }
+  .chart-legend { min-width: 90px; }
+  .chart-legend li { gap: 7px; font-size: 12px; }
   .chart-bars { gap: 13px; }
   .bar-chart { margin-right: 20px; gap: 12px; }
-  .bar-value { font-size: 9px; }
+  .bar-value { font-size: 11px; }
   th, td { padding-inline: 17px; }
   .detail-columns { grid-template-columns: 1fr 1fr; }
   .detail-metrics { grid-template-columns: 1fr 1fr; gap: 26px; }
@@ -357,10 +370,9 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; margin: 
   .sidebar { position: static; height: auto; width: auto; padding: 19px 24px; border-right: 0; border-bottom: 1px solid var(--line); border-radius: 23px 23px 0 0; display: flex; flex-direction: row; align-items: center; gap: 24px; overflow: visible; }
   .brand { padding: 0; font-size: 20px; flex-shrink: 0; }
   .brand-symbol { width: 35px; height: 35px; font-size: 22px; }
-  .brand small { font-size: 7px; }
   .workspace-label, .nav-caption, .sidebar-footer { display: none; }
   .sidebar nav { display: flex; gap: 5px; justify-content: flex-end; flex: 1; flex-wrap: wrap; }
-  .sidebar nav a { padding: 8px 11px; font-size: 11px; margin: 0; border-radius: 9px; }
+  .sidebar nav a { padding: 8px 11px; font-size: 13px; margin: 0; border-radius: 9px; }
   .sidebar nav a > span { display: none; }
   .topbar { min-height: 57px; border-radius: 0; }
   .charts-grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
@@ -372,33 +384,32 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; margin: 
   .app-shell { margin: 10px; border-radius: 20px; }
   .sidebar { flex-direction: column; gap: 18px; padding: 20px 16px 15px; border-radius: 20px 20px 0 0; }
   .sidebar nav { justify-content: center; width: 100%; gap: 6px; }
-  .sidebar nav a { flex: 1; justify-content: center; white-space: nowrap; font-size: 11px; padding: 9px 7px; }
+  .sidebar nav a { flex: 1; justify-content: center; white-space: nowrap; font-size: 13px; padding: 9px 7px; }
   .brand { font-size: 21px; }
-  .brand small { display: none; }
-  .topbar { padding: 12px 20px; font-size: 10px; gap: 10px; }
+  .topbar { padding: 12px 20px; font-size: 12px; gap: 10px; }
   .account-menu { gap: 12px; }
   .account-menu .text-link { font-size: 11px; }
-  .local-tag { font-size: 9px; letter-spacing: 0.5px; padding: 4px 7px; }
+  .local-tag { font-size: 12px; padding: 4px 7px; }
   main { padding: 26px 20px 0; }
   .page-heading { align-items: flex-start; gap: 16px; margin-bottom: 25px; }
   .page-heading h1 { font-size: 26px; letter-spacing: -1px; }
-  .page-heading .muted { font-size: 11px; }
-  .page-heading .button { padding: 9px 12px; font-size: 11px; min-height: 39px; }
+  .page-heading .muted { font-size: 13px; }
+  .page-heading .button { padding: 9px 12px; font-size: 13px; min-height: 39px; }
   .metrics { grid-template-columns: 1fr 1fr; gap: 12px; }
   .metric { padding: 20px; }
-  .metric p { font-size: 11px; }
+  .metric p { font-size: 13px; }
   .metric strong { font-size: 33px; }
-  .metric small { font-size: 10px; }
+  .metric small { font-size: 12px; }
   .charts-grid, .two-columns, .upload-layout, .detail-columns { grid-template-columns: 1fr; gap: 20px; }
   .distribution-chart { min-height: 248px; gap: 35px; padding: 17px 30px 28px; }
   .donut-chart { width: 176px; height: 176px; }
   .donut-center { inset: 25px; }
   .donut-center strong { font-size: 33px; }
   .chart-legend { min-width: 110px; max-width: 190px; }
-  .chart-legend li { font-size: 11px; gap: 10px; }
+  .chart-legend li { font-size: 12px; gap: 10px; }
   .bar-chart { margin: 16px 26px 23px 21px; height: 235px; }
   .chart-bars { gap: 19px; }
-  .flow-strip { font-size: 10px; }
+  .flow-strip { font-size: 12px; }
   .flow-strip > div > .muted { display: block; margin-top: 5px; }
   .panel-heading { padding: 20px 22px; }
   .padded { padding: 23px; }
@@ -413,7 +424,7 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; margin: 
   .login-page { grid-template-columns: 1fr; gap: 29px; padding: 38px 24px; max-width: 530px; }
   .login-intro h1 { font-size: 30px; line-height: 1.5; }
   .login-intro .brand-symbol { margin-bottom: 24px; }
-  .login-intro > p:last-child { margin-bottom: 0; font-size: 12px; }
+  .login-intro > p:last-child { margin-bottom: 0; font-size: 15px; }
   .login-card { padding: 28px; }
 }
 
@@ -422,32 +433,31 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; margin: 
   main { padding: 25px 14px 0; }
   .sidebar { padding-inline: 12px; }
   .sidebar nav { gap: 3px; }
-  .sidebar nav a { padding-inline: 5px; font-size: 10px; }
+  .sidebar nav a { padding-inline: 5px; font-size: 12px; }
   .topbar { padding-inline: 15px; }
-  .topbar > span { font-size: 9px; }
+  .topbar > span { font-size: 12px; }
   .local-tag { max-width: 120px; }
   .topbar > span .muted { display: none; }
   .page-heading { gap: 10px; }
   .page-heading h1 { font-size: 23px; }
-  .page-heading .button { padding: 9px; font-size: 10px; }
-  .eyebrow { font-size: 9px; letter-spacing: 1.2px; }
+  .page-heading .button { padding: 9px; font-size: 12px; }
   .metric { padding: 18px 15px; border-radius: 15px; }
   .metric strong { font-size: 31px; }
-  .metric small { font-size: 9px; }
+  .metric small { font-size: 12px; }
   .panel { border-radius: 16px; }
   .panel-heading { padding-inline: 18px; }
   .panel-heading h2 { font-size: 15px; }
-  .panel-heading a { font-size: 10px; }
+  .panel-heading a { font-size: 12px; }
   .distribution-chart { gap: 23px; padding-inline: 20px; }
   .donut-chart { width: 150px; height: 150px; }
   .donut-center { inset: 23px; }
   .donut-center strong { font-size: 29px; }
-  .chart-legend { min-width: 92px; }
+  .chart-legend { min-width: 100px; }
   .bar-chart { margin-inline: 15px 21px; gap: 11px; }
   .chart-bars { gap: 12px; padding-inline: 0; }
   .chart-bar { border-radius: 10px; }
-  .bar-value { font-size: 8px; }
-  .bar-label { font-size: 8px; }
+  .bar-value { font-size: 10px; }
+  .bar-label { font-size: 10px; }
   .padded { padding: 20px; }
   .system-grid { gap: 12px; grid-template-columns: 1fr 1fr; }
   .system-grid dd { font-size: 26px; }
