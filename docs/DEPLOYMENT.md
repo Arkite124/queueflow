@@ -34,6 +34,8 @@ docker compose @qfCompose up -d --no-deps --no-build --wait api
 
 `scripts/install_schedule.ps1`은 기본 미리보기이며 `-Apply`는 준비된 로컬 런타임을 사용하는 QueueFlow 전용 예약 작업을 등록한다.
 07:00 시작, 23:57 drain·정리, 사용자 로그인 시 시작을 지원한다. Docker Desktop 방식은 자동 Windows 로그인이 전제다.
+기동 시 Docker 응답 지연과 일시 실패를 제한 시간 안에서 재시도한다. 야간 drain 플래그는 재기동 후에도 남으므로
+`resume`으로 먼저 해제한 다음 readiness를 검사하고 Tunnel을 연결한다. 운영 시간이 끝나면 기동 재시도를 중단한다.
 실행 파일·Compose 스냅샷·제한된 ACL의 토큰 파일·작업 영수증은 `output/server-runtime/`에만 둔다.
 이 운영 디렉터리는 일반 테스트 결과 정리와 함께 삭제하지 않는다. PC별 설치 기록은 커밋하지 않는다.
 
