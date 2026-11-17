@@ -15,6 +15,9 @@ services:
       DEPLOYMENT_MODE: public
       AUTH_MODE: session
       PUBLIC_REGISTRATION: ${PUBLIC_REGISTRATION:-true}
+      CLIENT_IP_SOURCE: cloudflare
+      TRUSTED_PROXY_CIDRS: ${TRUSTED_PROXY_CIDRS:-}
+      REGISTRATION_EXEMPT_CIDRS: ${REGISTRATION_EXEMPT_CIDRS:-}
       COOKIE_SECURE: "true"
       CORS_ORIGINS: ${PUBLIC_FRONTEND_ORIGIN:-https://queueflow.youngjoong.dev}
       RETENTION_HOURS: "24"

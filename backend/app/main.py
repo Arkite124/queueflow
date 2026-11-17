@@ -141,7 +141,8 @@ def create_app(settings=None, sessions=None, storage=None, redis=None):
 
     @app.get("/api/v1/auth/config")
     def auth_config():
-        return {"public_registration": auth.registration_enabled}
+        return {"public_registration": auth.registration_enabled,
+                "max_accounts_per_ip": settings.max_accounts_per_ip}
 
     @app.post("/api/v1/auth/register", status_code=201)
     def register(credentials: RegistrationInput, request: Request):

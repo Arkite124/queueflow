@@ -33,7 +33,8 @@ def invited(tmp_path):
            for name in ("administrator", "alice", "bob")}
     app = create_app(settings, sessions, storage, UnavailableRedis())
     with ExitStack() as stack:
-        clients = {name: stack.enter_context(TestClient(app, base_url="https://api.example.test", headers={"Origin": ORIGIN}))
+        clients = {name: stack.enter_context(TestClient(app, base_url="https://api.example.test",
+                   client=("198.51.100.10", 50000), headers={"Origin": ORIGIN}))
                    for name in (*ids, "anonymous")}
         yield settings, sessions, storage, ids, clients
     engine.dispose()

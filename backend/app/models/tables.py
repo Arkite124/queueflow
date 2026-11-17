@@ -113,6 +113,7 @@ class User(Base):
     created_at: Mapped[float] = mapped_column(Float)
     failed_logins: Mapped[int] = mapped_column(Integer, default=0)
     locked_until: Mapped[float | None] = mapped_column(Float)
+    registration_ip_group: Mapped[str | None] = mapped_column(String(64), index=True)
 
 
 class LoginSession(Base):

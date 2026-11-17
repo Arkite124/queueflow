@@ -10,7 +10,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [registering, setRegistering] = useState(false);
   const [notice, setNotice] = useState('');
-  const config = useQuery({ queryKey: ['auth-config'], queryFn: () => api<{ public_registration: boolean }>('/api/v1/auth/config'), staleTime: 60000 });
+  const config = useQuery({ queryKey: ['auth-config'], queryFn: () => api<{ public_registration: boolean; max_accounts_per_ip: number }>('/api/v1/auth/config'), staleTime: 60000 });
   const login = useMutation({ mutationFn: () => signIn(username.trim().toLowerCase(), password), onSettled: () => setPassword('') });
   const registration = useMutation({
     mutationFn: () => api('/api/v1/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: username.trim().toLowerCase(), password }) }),
@@ -41,7 +41,8 @@ export default function Login() {
       <button className="button" type="submit" disabled={busy}>{busy ? (registering ? '가입 중…' : '로그인 중…') : (registering ? '가입하기' : '로그인')}</button>
       {(config.data?.public_registration || registering) && <p className="auth-switch">{registering ? '이미 계정이 있나요?' : '처음 방문했나요?'} <button className="text-link" type="button" disabled={busy} onClick={changeMode}>{registering ? '로그인' : '회원가입'}</button></p>}
       {config.isError && <p className="muted small">회원가입 정보를 불러오지 못했습니다. <button className="text-link" type="button" onClick={() => { void config.refetch(); }}>다시 시도</button></p>}
-      <p className="muted small">비밀번호 찾기는 지원하지 않습니다.{registering && ' 비밀번호를 잊으면 새 계정을 만들어야 합니다.'}</p>
+      {registering && <p className="muted small">중복 가입을 막기 위해 가입 네트워크를 기록합니다. 같은 IP에서는 최대 {config.data?.max_accounts_per_ip ?? 3}개 계정을 만들 수 있습니다.</p>}
+      <p className="muted small">비밀번호 찾기는 지원하지 않습니다.{registering && ' 새 계정을 만들어도 이전 계정의 작업은 볼 수 없습니다.'}</p>
     </form>
   </div>;
 }

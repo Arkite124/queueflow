@@ -9,4 +9,4 @@ COPY shared /app/shared
 COPY worker /app/worker
 COPY scripts /app/scripts
 USER queueflow
-CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8100", "--limit-concurrency", "50"]
+CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8100", "--no-proxy-headers", "--limit-concurrency", "50"]

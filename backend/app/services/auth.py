@@ -10,11 +10,12 @@ from functools import lru_cache
 
 from fastapi import HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select, text
 from sqlalchemy.exc import IntegrityError
 
 from backend.app.core.db import db_now
 from backend.app.models import LoginSession, User
+from backend.app.services.client_ip import client_ip, registration_group
 
 COOKIE_NAME = "__Host-queueflow_session"
 LOCAL_COOKIE_NAME = "queueflow_session"
@@ -71,6 +72,10 @@ class RegistrationInput(BaseModel):
 
 
 class UsernameTaken(ValueError):
+    pass
+
+
+class RegistrationLimitExceeded(ValueError):
     pass
 
 
@@ -134,14 +139,18 @@ class Auth:
         if not self.registration_enabled:
             raise HTTPException(403, "현재 회원가입을 받지 않습니다.")
         self.origin(request)
-        self._limit_attempts(request, registration=True)
+        address = self._limit_attempts(request, registration=True)
         if not self.password_slots.acquire(blocking=False):
             raise HTTPException(429, "가입 요청이 많습니다. 잠시 후 다시 시도하세요.")
         try:
             try:
-                provision_user(self.sessions, credentials.username, credentials.password)
+                provision_user(self.sessions, credentials.username, credentials.password,
+                               registration_ip_group=registration_group(address, self.settings),
+                               max_accounts_per_ip=self.settings.max_accounts_per_ip)
             except UsernameTaken:
                 raise HTTPException(409, "이미 사용 중인 아이디입니다.") from None
+            except RegistrationLimitExceeded:
+                raise HTTPException(429, "이 네트워크의 가입 한도에 도달했습니다. 기존 계정으로 로그인하세요.") from None
         finally:
             self.password_slots.release()
 
@@ -160,7 +169,8 @@ class Auth:
     def _limit_attempts(self, request, registration=False):
         attempts = self.registration_attempts if registration else self.attempts
         maximum = 5 if registration else 10
-        address = request.client.host if request.client else "unknown"
+        resolved = client_ip(request, self.settings)
+        address = str(resolved)
         now = time.monotonic()
         with self.attempt_lock:
             for key in list(attempts):
@@ -178,6 +188,7 @@ class Auth:
                     raise HTTPException(429, "가입 요청이 많습니다. 잠시 후 다시 시도하세요.")
                 self.registration_times.append(now)
             attempts[address].append(now)
+        return resolved
 
     def _verify(self, credentials):
         failure = False
@@ -214,17 +225,30 @@ class Auth:
                 LoginSession.token_hash == token_hash(request.cookies.get(self.cookie_name, ""))))
 
 
-def provision_user(sessions, username, password, is_admin=False):
+def provision_user(sessions, username, password, is_admin=False, *, registration_ip_group=None,
+                   max_accounts_per_ip=3):
     username = username.lower()
     if not USERNAME.fullmatch(username):
         raise ValueError("Username must be 3–64 lowercase letters, digits, dots, underscores or hyphens")
     encoded = password_hash(password)
     try:
         with sessions.begin() as session:
+            if registration_ip_group is not None:
+                if session.bind.dialect.name == "postgresql":
+                    digest = hashlib.blake2b(("signup:" + registration_ip_group).encode(), digest_size=8).digest()
+                    session.execute(text("SELECT pg_advisory_xact_lock(:key)"),
+                                    {"key": int.from_bytes(digest, "big", signed=True)})
+                elif session.bind.dialect.name == "sqlite":
+                    session.execute(text("BEGIN IMMEDIATE"))
             if session.scalar(select(User.id).where(User.username == username)):
                 raise UsernameTaken("Username already exists")
+            if registration_ip_group is not None:
+                count = session.scalar(select(func.count()).select_from(User).where(
+                    User.registration_ip_group == registration_ip_group))
+                if count >= max_accounts_per_ip:
+                    raise RegistrationLimitExceeded("Registration network account limit reached")
             user = User(username=username, password_hash=encoded, is_admin=is_admin,
-                        active=True, created_at=db_now(session))
+                        active=True, created_at=db_now(session), registration_ip_group=registration_ip_group)
             session.add(user)
             session.flush()
             user_id = user.id

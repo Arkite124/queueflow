@@ -17,6 +17,7 @@
 - Redis 전달 유실 시 PostgreSQL의 QUEUED 작업 재발행, 만료 RUNNING 복구
 - 로컬 drain/resume·보존기간 정리, 실제 관측 기반 운영 화면, CI 및 재현 스크립트
 - 아이디·비밀번호 직접 가입, opaque/HttpOnly/Secure 세션, CSRF, 계정별 작업·파일·멱등 키 분리
+- DB에 유지하는 IP별 계정 상한 3개, 명시적 내부 예외, 신뢰한 Cloudflare connector의 방문자 IP만 사용
 
 현재 범위는 CSV와 독립 작업 간 병렬 처리, 계정별 데모입니다. 가입 시 이메일은 받지 않으며 비밀번호 찾기는 제공하지 않습니다. 단일 CSV 내부 분할 병렬화와 YOLO/영상/AI는 구현하지 않았습니다. 가입 기능을 운영에 반영하려면 API와 프론트엔드를 함께 업데이트하고 실제 HTTPS에서 가입·로그인·파일 접근을 확인해야 합니다.
 
@@ -69,9 +70,9 @@ python -m pytest -v
 python -m ruff check backend worker shared scripts tests
 ```
 
-Python과 Node 실행 파일을 PATH에서 찾을 수 있도록 설치하세요. 개인 PC의 도구 경로는 저장소에 넣지 않습니다.
+Python과 Node 실행 파일을 PATH에서 찾을 수 있도록 설치하세요. 개인 PC의 도구 경로는 저장소에 넣지 않습니다. API는 `--no-proxy-headers`로 실행하고 전달 IP 판정은 애플리케이션의 `CLIENT_IP_SOURCE`와 `TRUSTED_PROXY_CIDRS`에 맡깁니다.
 
-실제 PostgreSQL/Redis를 로컬 프로세스로 실행할 경우 `DATABASE_URL`, `REDIS_URL`, `STORAGE_ROOT`를 설정하고 `alembic -c backend/alembic.ini upgrade head`, `uvicorn backend.app.main:app --host 127.0.0.1 --port 8100`, `python -m worker.dispatcher`, `python -m worker.main`을 별도 터미널에서 실행합니다. 앱 시작 시 스키마를 생성하거나 삭제하지 않습니다.
+실제 PostgreSQL/Redis를 로컬 프로세스로 실행할 경우 `DATABASE_URL`, `REDIS_URL`, `STORAGE_ROOT`를 설정하고 `alembic -c backend/alembic.ini upgrade head`, `uvicorn backend.app.main:app --host 127.0.0.1 --port 8100 --no-proxy-headers`, `python -m worker.dispatcher`, `python -m worker.main`을 별도 터미널에서 실행합니다. 앱 시작 시 스키마를 생성하거나 삭제하지 않습니다.
 
 ## API 예시
 

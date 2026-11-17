@@ -18,11 +18,23 @@ public 모드에서 세션 인증/Secure cookie/정확한 HTTPS origin이 빠지
 
 가입 아이디는 3–64자의 영문·숫자·점·하이픈·밑줄이며 영문 또는 숫자로 시작합니다. 대소문자를 구분하지 않고 소문자로 저장합니다. 비밀번호는 공백을 포함해 입력 그대로 12–128자를 사용합니다. 같은 아이디의 동시 가입은 DB UNIQUE 제약으로 하나만 성공하고 나머지는 409입니다.
 
-가입 요청은 실제 연결 주소당 분당 5회, API 프로세스 전체 시간당 30회로 제한합니다. 임의의 `X-Forwarded-For`를 직접 신뢰하지 않으며 proxy 구성에 따라 주소별 한도가 여러 방문자에게 함께 적용될 수 있습니다. 이 제한은 프로세스 메모리 기준이므로 재시작 시 초기화되고 다중 API 인스턴스를 통합하지 않습니다. 가입과 로그인은 비밀번호 계산 동시 한도 2개를 공유합니다. 인증 요청 본문은 실제 수신 바이트 기준 8 KiB로 제한합니다.
+가입 요청은 확인된 방문자 IP당 분당 5회, API 프로세스 전체 시간당 30회로 제한합니다. 이 요청 횟수 제한은 프로세스 메모리 기준이므로 재시작 시 초기화되고 다중 API 인스턴스를 통합하지 않습니다. 가입과 로그인은 비밀번호 계산 동시 한도 2개를 공유합니다. 인증 요청 본문은 실제 수신 바이트 기준 8 KiB로 제한합니다.
+
+## IP별 계정 수 제한
+
+`MAX_ACCOUNTS_PER_IP=3`이 기본입니다. IPv4는 주소별 `/32`, IPv6는 임시 주소 변경을 통한 우회를 줄이기 위해 같은 `/64` 네트워크별로 최대 3개 계정까지 가입합니다. 가입 네트워크는 `users.registration_ip_group`에 저장하며 API 응답과 애플리케이션 로그에는 노출하지 않습니다. 이 값은 비밀 식별자나 동일인 증명이 아닙니다. 공유기·회사·카페 등 같은 공인 IP를 쓰는 방문자는 한도를 공유하고, VPN이나 다른 네트워크로 바꾸면 다른 그룹이 됩니다.
+
+계정 수는 PostgreSQL 트랜잭션과 그룹별 advisory lock 안에서 검사·등록하므로 API 재시작과 여러 API 인스턴스의 동시 가입에도 유지됩니다. 비활성 계정도 포함하며 기존 계정의 로그인은 막지 않습니다. 예전 계정과 CLI로 생성한 계정의 가입 IP는 추정해 채우지 않고 NULL로 유지합니다.
+
+`REGISTRATION_EXEMPT_CIDRS`는 기본 빈 목록입니다. 관리자가 명시한 IP/CIDR만 계정 수 상한에서 제외하며 RFC1918·loopback 등 내부 주소를 자동 면제하지 않습니다. 예외 가입은 그룹을 NULL로 기록합니다. 예외에도 기존 가입 요청 횟수·동시 계산 제한은 그대로 적용합니다.
+
+`CLIENT_IP_SOURCE=direct`는 실제 TCP 연결 주소만 사용하고 모든 전달 IP 헤더를 무시합니다. Cloudflare Tunnel 운영 Compose는 `cloudflare`를 사용합니다. 이때 실제 연결 주소가 `TRUSTED_PROXY_CIDRS`에 포함될 때만 단일 유효 `CF-Connecting-IP`를 신뢰합니다. 누락·중복·잘못된 헤더나 미등록 connector는 로그인·가입을 503으로 거부하며 connector IP나 다른 헤더로 대체하지 않습니다. 내부 예외 판정도 connector가 아닌 최종 방문자 주소에만 적용합니다.
+
+Uvicorn은 `--no-proxy-headers`로 실행해 이 검사 전에 client 주소가 임의 헤더로 덮어써지지 않게 합니다. 신뢰할 proxy는 실제 cloudflared→API 연결 peer의 정확한 주소로 설정합니다. `TRUSTED_PROXY_CIDRS`와 `REGISTRATION_EXEMPT_CIDRS`는 서로 다른 목적이며, 모든 주소를 포함하는 `/0`은 거부합니다. Pseudo IPv4의 Overwrite Headers는 사용하지 않고 실제 주소를 전달하도록 운영 설정을 확인합니다. 참고: [Cloudflare 헤더](https://developers.cloudflare.com/fundamentals/reference/http-headers/), [Uvicorn proxy 설정](https://uvicorn.dev/settings/).
 
 ## 관리자 운영 도구
 
-스키마 `0002`의 기존 계정·세션 테이블을 그대로 사용하므로 이 변경에 새 migration은 필요하지 않습니다. 관리자 생성·계정 비활성화 등의 운영 명령은 QueueFlow 컨테이너에서 실행합니다. 비밀번호는 터미널의 숨김 입력으로 받고 인자·Git·로그에 쓰지 않습니다. 기본 계정/공통 운영 비밀번호를 자동 생성하지 않습니다. 수동 reset-password 명령은 관리자 운영용이며 방문자에게 제공하는 복구 기능은 아닙니다.
+스키마 `0003`은 기존 계정에 nullable 가입 네트워크 컬럼과 인덱스만 추가합니다. 기존 계정·비밀번호·작업은 유지합니다. 관리자 생성·계정 비활성화 등의 운영 명령은 QueueFlow 컨테이너에서 실행합니다. 비밀번호는 터미널의 숨김 입력으로 받고 인자·Git·로그에 쓰지 않습니다. 기본 계정/공통 운영 비밀번호를 자동 생성하지 않습니다. 수동 reset-password 명령은 관리자 운영용이며 방문자에게 제공하는 복구 기능은 아닙니다.
 
 ```powershell
 docker compose exec api python -m scripts.manage_users create owner --admin

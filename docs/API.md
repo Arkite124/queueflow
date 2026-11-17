@@ -7,8 +7,8 @@
 | GET /health | API 프로세스 응답. worker 가용성을 뜻하지 않음 |
 | GET /ready | 관리자만 DB/migration, Redis, storage, accepting_jobs 체크. 준비 안 되면 503 |
 | GET /api/v1/auth/me | 현재 계정·역할·CSRF token·모드. 미로그인은 401 |
-| GET /api/v1/auth/config | 비로그인 상태에서 public_registration 여부 확인 |
-| POST /api/v1/auth/register | JSON username/password → 201, 일반 계정 생성 후 별도 로그인. 중복 409, 가입 중단 403, 요청 제한 429 |
+| GET /api/v1/auth/config | 비로그인 상태에서 public_registration, max_accounts_per_ip 확인 |
+| POST /api/v1/auth/register | JSON username/password → 201, 일반 계정 생성 후 별도 로그인. 중복 409, 가입 중단 403, 요청·IP별 계정 상한 429, IP 확인 실패 503 |
 | POST /api/v1/auth/login | 계정 JSON username/password → HttpOnly cookie, 계정/CSRF 응답 |
 | POST /api/v1/auth/logout | 현재 세션 폐기. CSRF 필수 |
 | POST /api/v1/jobs | multipart `file`, optional `options` JSON 문자열, optional `Idempotency-Key`; 영속 등록 후 202 |

@@ -1,4 +1,5 @@
 import os
+from ipaddress import ip_network
 from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -14,6 +15,12 @@ class Settings:
     deployment_mode: str = field(default_factory=lambda: os.getenv("DEPLOYMENT_MODE", "local"))
     auth_mode: str = field(default_factory=lambda: os.getenv("AUTH_MODE", "local"))
     public_registration: bool = field(default_factory=lambda: os.getenv("PUBLIC_REGISTRATION", "true").lower() == "true")
+    max_accounts_per_ip: int = field(default_factory=lambda: int(os.getenv("MAX_ACCOUNTS_PER_IP", "3")))
+    client_ip_source: str = field(default_factory=lambda: os.getenv("CLIENT_IP_SOURCE", "direct"))
+    trusted_proxy_cidrs: list[str] = field(default_factory=lambda: [
+        value.strip() for value in os.getenv("TRUSTED_PROXY_CIDRS", "").split(",") if value.strip()])
+    registration_exempt_cidrs: list[str] = field(default_factory=lambda: [
+        value.strip() for value in os.getenv("REGISTRATION_EXEMPT_CIDRS", "").split(",") if value.strip()])
     cookie_secure: bool = field(default_factory=lambda: os.getenv("COOKIE_SECURE", "false").lower() == "true")
     session_seconds: int = field(default_factory=lambda: int(os.getenv("SESSION_SECONDS", "28800")))
     max_active_jobs_per_owner: int = field(default_factory=lambda: int(os.getenv("MAX_ACTIVE_JOBS_PER_OWNER", "4")))
@@ -40,6 +47,15 @@ class Settings:
     drain_file: str = ".drain"
 
     def __post_init__(self):
+        if self.max_accounts_per_ip < 1:
+            raise ValueError("MAX_ACCOUNTS_PER_IP must be positive")
+        if self.client_ip_source not in {"direct", "cloudflare"}:
+            raise ValueError("CLIENT_IP_SOURCE must be direct or cloudflare")
+        for name in ("trusted_proxy_cidrs", "registration_exempt_cidrs"):
+            networks = [ip_network(value, strict=False) for value in getattr(self, name)]
+            if any(network.prefixlen == 0 for network in networks):
+                raise ValueError("Proxy and exemption CIDRs cannot cover all addresses")
+            setattr(self, name, [str(network) for network in networks])
         if self.deployment_mode not in {"local", "public"} or self.auth_mode not in {"local", "session"}:
             raise ValueError("Invalid deployment or authentication mode")
         if not 300 <= self.session_seconds <= 86400:
