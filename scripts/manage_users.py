@@ -1,4 +1,4 @@
-"""Provision invited users from the local administrator terminal; no public signup."""
+"""Provision administrators and maintain accounts from the local operator terminal."""
 import argparse
 import getpass
 

@@ -1,11 +1,13 @@
 # 운영 배포
 
 프로젝트 루트에서 Docker Desktop Linux engine과 Compose를 사용한다. PostgreSQL이 최종 상태의 기준이며 named volume은 업데이트 때 보존한다.
+아이디·비밀번호 가입과 IP별 계정 상한을 반영하는 순서는 [가입·IP 제한 운영 반영](ACCOUNT_ROLLOUT.md)에 있다. 실제 연결 IP 확인, 환경 설정, `0003` migration, 예약 운영 Compose 복사본 갱신, 공개 검증을 포함한다.
 
 ## 운영 설정
 
 비밀 환경 파일 `.env`는 서버에서만 보관한다. 신규 DB 비밀번호는 난수로 생성하고 기존 DB의 비밀번호를 환경 파일만 수정해 변경하지 않는다.
 공개 배포에는 session 인증, Secure cookie, 정확한 HTTPS 프런트 origin이 필요하다. 프런트 빌드의 `VITE_API_BASE_URL`은 공개 API 주소다.
+Cloudflare 운영 Compose는 `CLIENT_IP_SOURCE=cloudflare`를 강제한다. 배포 전에 `TRUSTED_PROXY_CIDRS`에 실제 cloudflared→API 연결 peer의 정확한 IP/CIDR을 설정한다. Docker의 host gateway 주소는 PC마다 다르므로 추정해 넣지 않는다. 빈 목록이면 로그인·가입은 503이며 connector 주소를 방문자 주소로 대체하지 않는다. API 접속 로그의 peer와 loopback 바인딩을 확인하고 정확한 `/32` 또는 `/128`을 지정한다. `REGISTRATION_EXEMPT_CIDRS`는 내부 방문자 계정 상한 면제용으로 별도 설정하며 기본은 빈 목록이다.
 
 ```powershell
 $qfCompose = @('-p', 'queueflow-server', '-f', 'docker-compose.yml', '-f', 'docker-compose.production.yml')
@@ -15,6 +17,7 @@ docker compose @qfCompose exec -T api python -m scripts.readiness
 ```
 
 계정은 `scripts.manage_users`로 만들고 비밀번호는 터미널의 숨김 입력을 사용한다. 자세한 인증 정책은 [AUTHENTICATION.md](AUTHENTICATION.md)를 참고한다.
+방문자는 아이디·비밀번호로 직접 가입한다. `PUBLIC_REGISTRATION` 기본값은 `true`이며 `false`로 신규 가입만 닫을 수 있다. 관리자 계정은 웹 가입으로 만들 수 없다. 이메일 수집과 비밀번호 찾기는 제공하지 않는다.
 
 ## 프런트와 API 업데이트
 
@@ -23,12 +26,14 @@ Pages의 Git 연동은 프런트 배포를 담당한다. API는 별도 Docker �
 예약 기동은 이미 빌드된 이미지로 실행하며 자동 Git pull·build를 수행하지 않는다.
 
 ```powershell
-docker compose @qfCompose build api
+docker compose @qfCompose build api migrate
+docker compose @qfCompose run --rm migrate
 docker compose @qfCompose up -d --no-deps --no-build --wait api
 ```
 
 운영 반영은 승인된 범위에서 실행한다. 기존 포트·서비스·볼륨을 확인하고 프런트/API 버전을 함께 검증한다.
 인증, CSV 처리, 개별 파일과 ZIP/Excel 다운로드, 사용자별 접근 차단을 실제 HTTPS에서 확인한다.
+가입 기능 반영 시 프런트만 배포하면 신규 API가 없어 동작하지 않는다. API 이미지와 동일한 migrate 이미지를 빌드하고 `alembic upgrade head`로 `0003`을 적용한 뒤 API를 업데이트한다. `GET /api/v1/auth/config`의 `public_registration`, `max_accounts_per_ip`를 확인한 뒤 프런트를 배포한다. 기존 계정·작업을 유지하며 신규 가입, 같은 IP의 4번째 가입 거부, 다른 IP의 가입, 로그아웃·재로그인, 다른 계정의 파일 접근 차단을 확인한다. 테스트 후 내부 예외가 필요하면 실제 방문자 IP만 별도로 설정한다.
 
 ## 예약 운영
 

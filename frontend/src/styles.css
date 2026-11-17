@@ -328,6 +328,9 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; margin: 
 .login-card label { margin-top: 22px; }
 .login-card .button { width: 100%; margin: 28px 0 22px; }
 .login-card .error-box { margin: 20px 0 0; }
+.auth-help { display: block; margin-top: 7px; font-size: 12px; line-height: 1.6; }
+.auth-switch { text-align: center; font-size: 13px; }
+.auth-switch .text-link { font-size: inherit; }
 .login-card > p:last-child { line-height: 1.85; font-size: 11px; }
 
 @media (min-width: 1650px) {

@@ -33,7 +33,7 @@ function App() {
           ].map(([to, icon, label]) => <NavLink key={to} to={to} end={to === '/'}><span>{icon}</span>{label}</NavLink>)}
           {session.user.is_admin && <><p className="nav-caption">관리</p><NavLink to="/system"><span>◎</span>시스템 상태</NavLink></>}
         </nav>
-        <div className="sidebar-footer"><span className="signal" />{local ? '로컬 실행' : '초대 전용'}<small>v0.1.0</small></div>
+        <div className="sidebar-footer"><span className="signal" />{local ? '로컬 실행' : '개인 작업 공간'}<small>v0.1.0</small></div>
       </aside>
       <div className="main-shell">
         <div className="topbar">

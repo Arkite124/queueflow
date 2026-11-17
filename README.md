@@ -2,7 +2,7 @@
 
 장애 복구와 데이터 일관성을 검증하는 비동기 CSV 처리 플랫폼. HTTP 요청은 파일과 작업을 영속 등록하고, 별도 Python 워커가 검증·정제·오류 보고서를 생성합니다. PostgreSQL이 최종 상태와 결과 참조의 기준이며 Redis Streams는 **at-least-once 전달**을 담당합니다.
 
-인증 설계는 [초대 계정 문서](docs/AUTHENTICATION.md), 공통 운영 절차는 [배포 안내](docs/DEPLOYMENT.md), 검증 방법은 [테스트 안내](docs/TESTING.md)에 있습니다. 실행 기록과 PC별 환경 정보는 로컬에만 보관합니다.
+인증 설계는 [가입·로그인 문서](docs/AUTHENTICATION.md), 공통 운영 절차는 [배포 안내](docs/DEPLOYMENT.md), 검증 방법은 [테스트 안내](docs/TESTING.md)에 있습니다. 실행 기록과 PC별 환경 정보는 로컬에만 보관합니다.
 
 ## 구현 범위
 
@@ -16,9 +16,10 @@
 - `XREADGROUP`, `XAUTOCLAIM`, 영속 결과/재시도 확정 이후 `XACK`
 - Redis 전달 유실 시 PostgreSQL의 QUEUED 작업 재발행, 만료 RUNNING 복구
 - 로컬 drain/resume·보존기간 정리, 실제 관측 기반 운영 화면, CI 및 재현 스크립트
-- 관리자 CLI로 생성하는 초대 계정, opaque/HttpOnly/Secure 세션, CSRF, 사용자별 작업·파일·멱등 키 분리
+- 아이디·비밀번호 직접 가입, opaque/HttpOnly/Secure 세션, CSRF, 계정별 작업·파일·멱등 키 분리
+- DB에 유지하는 IP별 계정 상한 3개, 명시적 내부 예외, 신뢰한 Cloudflare connector의 방문자 IP만 사용
 
-현재 범위는 CSV와 독립 작업 간 병렬 처리, 초대 계정 데모입니다. 단일 CSV 내부 분할 병렬화, YOLO/영상/AI, 공개 회원가입은 구현하지 않았습니다. 공개 모드의 실제 HTTPS 브라우저 로그인 검증과 운영 서버 적용은 아직 남았습니다.
+현재 범위는 CSV와 독립 작업 간 병렬 처리, 계정별 데모입니다. 가입 시 이메일은 받지 않으며 비밀번호 찾기는 제공하지 않습니다. 단일 CSV 내부 분할 병렬화와 YOLO/영상/AI는 구현하지 않았습니다. 가입 기능을 운영에 반영하려면 API와 프론트엔드를 함께 업데이트하고 실제 HTTPS에서 가입·로그인·파일 접근을 확인해야 합니다.
 
 ## 구성
 
@@ -69,9 +70,9 @@ python -m pytest -v
 python -m ruff check backend worker shared scripts tests
 ```
 
-Python과 Node 실행 파일을 PATH에서 찾을 수 있도록 설치하세요. 개인 PC의 도구 경로는 저장소에 넣지 않습니다.
+Python과 Node 실행 파일을 PATH에서 찾을 수 있도록 설치하세요. 개인 PC의 도구 경로는 저장소에 넣지 않습니다. API는 `--no-proxy-headers`로 실행하고 전달 IP 판정은 애플리케이션의 `CLIENT_IP_SOURCE`와 `TRUSTED_PROXY_CIDRS`에 맡깁니다.
 
-실제 PostgreSQL/Redis를 로컬 프로세스로 실행할 경우 `DATABASE_URL`, `REDIS_URL`, `STORAGE_ROOT`를 설정하고 `alembic -c backend/alembic.ini upgrade head`, `uvicorn backend.app.main:app --host 127.0.0.1 --port 8100`, `python -m worker.dispatcher`, `python -m worker.main`을 별도 터미널에서 실행합니다. 앱 시작 시 스키마를 생성하거나 삭제하지 않습니다.
+실제 PostgreSQL/Redis를 로컬 프로세스로 실행할 경우 `DATABASE_URL`, `REDIS_URL`, `STORAGE_ROOT`를 설정하고 `alembic -c backend/alembic.ini upgrade head`, `uvicorn backend.app.main:app --host 127.0.0.1 --port 8100 --no-proxy-headers`, `python -m worker.dispatcher`, `python -m worker.main`을 별도 터미널에서 실행합니다. 앱 시작 시 스키마를 생성하거나 삭제하지 않습니다.
 
 ## API 예시
 
@@ -133,4 +134,4 @@ docker compose exec api python -m scripts.maintenance cleanup
 
 drain 플래그는 파일 볼륨에 남으므로 재시작 후 명시적으로 resume해야 합니다. 23:57 drain, 00:00 정지, 07:00 기동 정책의 연결 지점만 제공하며 Windows 작업 스케줄러/BIOS/기존 서버 설정은 변경하지 않습니다. 보존기간 정리는 명시적인 관리 명령이며 자동 스케줄은 설치하지 않았습니다.
 
-기본 실행은 고정된 `local` 사용자와 localhost 바인딩입니다. 초대 계정 로컬 검증은 `AUTH_MODE=session`, `COOKIE_SECURE=false`로 설정하고 관리자 CLI로 계정을 만듭니다. 공개 모드는 [인증 문서](docs/AUTHENTICATION.md)의 HTTPS·Secure cookie·origin 조건을 충족해야 합니다. 인증 기능이 추가됐다는 사실만으로 운영 검증이 끝난 것은 아닙니다. [배포 조건](docs/TESTING.md), [보안](docs/SECURITY.md), [Cloudflare 배포 준비](docs/DEPLOYMENT.md)를 확인하세요. 초기 main push와 Pages 등록은 사용자 승인으로 진행했으며 기존 포트폴리오·DNS·Tunnel·운영 서버 변경은 수행하지 않았습니다.
+기본 실행은 고정된 `local` 사용자와 localhost 바인딩입니다. 가입·로그인 로컬 검증은 `AUTH_MODE=session`, `COOKIE_SECURE=false`로 설정합니다. `PUBLIC_REGISTRATION=false`로 신규 가입만 닫을 수 있으며 관리자 계정은 CLI로 만듭니다. 공개 모드는 [인증 문서](docs/AUTHENTICATION.md)의 HTTPS·Secure cookie·origin 조건을 충족해야 합니다. 인증 기능이 추가됐다는 사실만으로 운영 검증이 끝난 것은 아닙니다. [배포 조건](docs/TESTING.md), [보안](docs/SECURITY.md), [Cloudflare 배포 준비](docs/DEPLOYMENT.md)를 확인하세요.
