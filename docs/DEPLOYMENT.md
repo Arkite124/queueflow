@@ -1,6 +1,7 @@
 # 운영 배포
 
 프로젝트 루트에서 Docker Desktop Linux engine과 Compose를 사용한다. PostgreSQL이 최종 상태의 기준이며 named volume은 업데이트 때 보존한다.
+아이디·비밀번호 가입과 IP별 계정 상한을 반영하는 순서는 [가입·IP 제한 운영 반영](ACCOUNT_ROLLOUT.md)에 있다. 실제 연결 IP 확인, 환경 설정, `0003` migration, 예약 운영 Compose 복사본 갱신, 공개 검증을 포함한다.
 
 ## 운영 설정
 

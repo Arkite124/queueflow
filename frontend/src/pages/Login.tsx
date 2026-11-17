@@ -2,7 +2,17 @@ import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useSession } from '../lib/session-context';
 import { ErrorState } from '../components/Common';
-import { api } from '../lib/api';
+import { api, ApiError } from '../lib/api';
+
+async function authConfig() {
+  try { return await api<{ public_registration: boolean; max_accounts_per_ip: number }>('/api/v1/auth/config'); }
+  catch (error) {
+    // Pages can deploy before the server. Older APIs keep their existing login
+    // flow until the signup endpoints are deployed.
+    if (error instanceof ApiError && error.status === 404) return { public_registration: false, max_accounts_per_ip: 3 };
+    throw error;
+  }
+}
 
 export default function Login() {
   const { signIn } = useSession();
@@ -10,7 +20,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [registering, setRegistering] = useState(false);
   const [notice, setNotice] = useState('');
-  const config = useQuery({ queryKey: ['auth-config'], queryFn: () => api<{ public_registration: boolean; max_accounts_per_ip: number }>('/api/v1/auth/config'), staleTime: 60000 });
+  const config = useQuery({ queryKey: ['auth-config'], queryFn: authConfig, staleTime: 60000 });
   const login = useMutation({ mutationFn: () => signIn(username.trim().toLowerCase(), password), onSettled: () => setPassword('') });
   const registration = useMutation({
     mutationFn: () => api('/api/v1/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: username.trim().toLowerCase(), password }) }),
