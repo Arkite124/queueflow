@@ -13,6 +13,7 @@ class Settings:
     owner_id: str = "local"
     deployment_mode: str = field(default_factory=lambda: os.getenv("DEPLOYMENT_MODE", "local"))
     auth_mode: str = field(default_factory=lambda: os.getenv("AUTH_MODE", "local"))
+    public_registration: bool = field(default_factory=lambda: os.getenv("PUBLIC_REGISTRATION", "true").lower() == "true")
     cookie_secure: bool = field(default_factory=lambda: os.getenv("COOKIE_SECURE", "false").lower() == "true")
     session_seconds: int = field(default_factory=lambda: int(os.getenv("SESSION_SECONDS", "28800")))
     max_active_jobs_per_owner: int = field(default_factory=lambda: int(os.getenv("MAX_ACTIVE_JOBS_PER_OWNER", "4")))

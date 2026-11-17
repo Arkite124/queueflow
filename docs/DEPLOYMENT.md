@@ -15,6 +15,7 @@ docker compose @qfCompose exec -T api python -m scripts.readiness
 ```
 
 계정은 `scripts.manage_users`로 만들고 비밀번호는 터미널의 숨김 입력을 사용한다. 자세한 인증 정책은 [AUTHENTICATION.md](AUTHENTICATION.md)를 참고한다.
+방문자는 아이디·비밀번호로 직접 가입한다. `PUBLIC_REGISTRATION` 기본값은 `true`이며 `false`로 신규 가입만 닫을 수 있다. 관리자 계정은 웹 가입으로 만들 수 없다. 이메일 수집과 비밀번호 찾기는 제공하지 않는다.
 
 ## 프런트와 API 업데이트
 
@@ -29,6 +30,7 @@ docker compose @qfCompose up -d --no-deps --no-build --wait api
 
 운영 반영은 승인된 범위에서 실행한다. 기존 포트·서비스·볼륨을 확인하고 프런트/API 버전을 함께 검증한다.
 인증, CSV 처리, 개별 파일과 ZIP/Excel 다운로드, 사용자별 접근 차단을 실제 HTTPS에서 확인한다.
+가입 기능 반영 시 프런트만 배포하면 신규 API가 없어 동작하지 않는다. API를 먼저 업데이트하고 `GET /api/v1/auth/config`의 `public_registration`을 확인한 뒤 프런트를 배포한다. 기존 계정·작업을 유지하며 신규 가입, 로그아웃·재로그인, 다른 계정의 파일 접근 차단을 확인한다. 별도 DB migration은 추가되지 않았다.
 
 ## 예약 운영
 

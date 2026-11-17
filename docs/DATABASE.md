@@ -10,7 +10,7 @@
 | job_artifacts | 입력/정제/오류/요약의 크기·SHA-256·저장 키 | job FK, `(job_id,artifact_type)` UNIQUE |
 | outbox_events | JOB / DEAD_LETTER 전달 의도와 발행 시각 | job FK, published+created 인덱스 |
 | worker_heartbeats | 워커별 마지막 관측·현재 작업 | worker_id PK |
-| users | 관리자가 초대한 계정, 비밀번호 hash, 역할·활성·실패 잠금 | username UNIQUE |
+| users | 직접 가입·관리자 발급 계정, 비밀번호 hash, 역할·활성·실패 잠금 | username UNIQUE |
 | login_sessions | opaque token의 hash, user FK, CSRF token, 만료 | token hash PK, user/expiry 인덱스 |
 
 시각은 UTC epoch double로 저장하고 API에서는 ISO-8601로 반환합니다. 소유권 판단은 PostgreSQL `clock_timestamp()`를 사용합니다. SQLite 단위 테스트에서만 호스트 시간을 사용합니다. 토큰과 실행 시도는 작업 행 잠금 안에서 증가합니다.

@@ -9,8 +9,9 @@ from dataclasses import dataclass
 from functools import lru_cache
 
 from fastapi import HTTPException, Request
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import delete, select
+from sqlalchemy.exc import IntegrityError
 
 from backend.app.core.db import db_now
 from backend.app.models import LoginSession, User
@@ -55,6 +56,24 @@ class LoginInput(BaseModel):
     password: str = Field(min_length=1, max_length=128)
 
 
+class RegistrationInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    username: str = Field(min_length=3, max_length=64)
+    password: str = Field(min_length=12, max_length=128)
+
+    @field_validator("username")
+    @classmethod
+    def valid_username(cls, value):
+        value = value.lower()
+        if not USERNAME.fullmatch(value):
+            raise ValueError("Invalid username")
+        return value
+
+
+class UsernameTaken(ValueError):
+    pass
+
+
 @dataclass(frozen=True)
 class Principal:
     owner_id: str
@@ -67,6 +86,8 @@ class Auth:
     def __init__(self, sessions, settings):
         self.sessions, self.settings = sessions, settings
         self.attempts = defaultdict(deque)
+        self.registration_attempts = defaultdict(deque)
+        self.registration_times = deque()
         self.attempt_lock = threading.Lock()
         self.password_slots = threading.BoundedSemaphore(2)
 
@@ -105,27 +126,58 @@ class Auth:
             raise HTTPException(403, "Administrator access required")
         return principal
 
+    @property
+    def registration_enabled(self):
+        return self.settings.auth_mode == "session" and self.settings.public_registration
+
+    def register(self, request, credentials):
+        if not self.registration_enabled:
+            raise HTTPException(403, "현재 회원가입을 받지 않습니다.")
+        self.origin(request)
+        self._limit_attempts(request, registration=True)
+        if not self.password_slots.acquire(blocking=False):
+            raise HTTPException(429, "가입 요청이 많습니다. 잠시 후 다시 시도하세요.")
+        try:
+            try:
+                provision_user(self.sessions, credentials.username, credentials.password)
+            except UsernameTaken:
+                raise HTTPException(409, "이미 사용 중인 아이디입니다.") from None
+        finally:
+            self.password_slots.release()
+
     def login(self, request, credentials):
         if self.settings.auth_mode != "session":
             raise HTTPException(409, "Login is disabled in local mode")
         self.origin(request)
-        address = request.client.host if request.client else "unknown"
-        now = time.monotonic()
-        with self.attempt_lock:
-            for key in list(self.attempts):
-                while self.attempts[key] and self.attempts[key][0] < now - 60:
-                    self.attempts[key].popleft()
-                if not self.attempts[key]:
-                    del self.attempts[key]
-            if len(self.attempts) >= 1024 or len(self.attempts[address]) >= 10:
-                raise HTTPException(429, "Too many login attempts; try later")
-            self.attempts[address].append(now)
+        self._limit_attempts(request)
         if not self.password_slots.acquire(blocking=False):
             raise HTTPException(429, "Login is busy; try later")
         try:
             return self._verify(credentials)
         finally:
             self.password_slots.release()
+
+    def _limit_attempts(self, request, registration=False):
+        attempts = self.registration_attempts if registration else self.attempts
+        maximum = 5 if registration else 10
+        address = request.client.host if request.client else "unknown"
+        now = time.monotonic()
+        with self.attempt_lock:
+            for key in list(attempts):
+                while attempts[key] and attempts[key][0] <= now - 60:
+                    attempts[key].popleft()
+                if not attempts[key]:
+                    del attempts[key]
+            if ((address not in attempts and len(attempts) >= 1024)
+                    or len(attempts[address]) >= maximum):
+                raise HTTPException(429, "요청이 많습니다. 잠시 후 다시 시도하세요.")
+            if registration:
+                while self.registration_times and self.registration_times[0] <= now - 3600:
+                    self.registration_times.popleft()
+                if len(self.registration_times) >= 30:
+                    raise HTTPException(429, "가입 요청이 많습니다. 잠시 후 다시 시도하세요.")
+                self.registration_times.append(now)
+            attempts[address].append(now)
 
     def _verify(self, credentials):
         failure = False
@@ -167,10 +219,20 @@ def provision_user(sessions, username, password, is_admin=False):
     if not USERNAME.fullmatch(username):
         raise ValueError("Username must be 3–64 lowercase letters, digits, dots, underscores or hyphens")
     encoded = password_hash(password)
-    with sessions.begin() as session:
-        if session.scalar(select(User.id).where(User.username == username)):
-            raise ValueError("Username already exists")
-        user = User(username=username, password_hash=encoded, is_admin=is_admin, active=True, created_at=db_now(session))
-        session.add(user)
-        session.flush()
-        return user.id
+    try:
+        with sessions.begin() as session:
+            if session.scalar(select(User.id).where(User.username == username)):
+                raise UsernameTaken("Username already exists")
+            user = User(username=username, password_hash=encoded, is_admin=is_admin,
+                        active=True, created_at=db_now(session))
+            session.add(user)
+            session.flush()
+            user_id = user.id
+        return user_id
+    except IntegrityError as exc:
+        # A concurrent registration can win after the initial lookup. Query only
+        # after the failed transaction has rolled back, including on PostgreSQL.
+        with sessions() as session:
+            if session.scalar(select(User.id).where(User.username == username)):
+                raise UsernameTaken("Username already exists") from exc
+        raise

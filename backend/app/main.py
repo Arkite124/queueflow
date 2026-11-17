@@ -23,7 +23,7 @@ from backend.app.core.config import Settings
 from backend.app.core.db import db_now, make_engine, make_sessions
 from backend.app.models import Artifact, Attempt, Event, Job, LoginSession, User, WorkerHeartbeat
 from backend.app.services.jobs import CapacityExceeded, Conflict, cancel_job, create_job
-from backend.app.services.auth import Auth, LoginInput, Principal
+from backend.app.services.auth import Auth, LoginInput, Principal, RegistrationInput
 from backend.app.services.storage import LocalStorage
 from backend.app.services.reports import chunks, result_export
 from shared.contracts import Status
@@ -69,7 +69,7 @@ class BodyLimit:
                                           status_code=429)(scope, receive, send)
             self.upload_times.append(now)
         headers = dict(scope.get("headers", []))
-        limit = 8192 if scope.get("path") == "/api/v1/auth/login" else self.max_bytes
+        limit = 8192 if scope.get("path", "").startswith("/api/v1/auth/") else self.max_bytes
         try:
             length = int(headers.get(b"content-length", b"0"))
         except ValueError:
@@ -137,7 +137,18 @@ def create_app(settings=None, sessions=None, storage=None, redis=None):
 
     def principal_view(principal):
         return {"mode": settings.auth_mode, "user": {"username": principal.username, "is_admin": principal.is_admin},
-                "csrf_token": principal.csrf_token, "public_registration": False}
+                "csrf_token": principal.csrf_token, "public_registration": auth.registration_enabled}
+
+    @app.get("/api/v1/auth/config")
+    def auth_config():
+        return {"public_registration": auth.registration_enabled}
+
+    @app.post("/api/v1/auth/register", status_code=201)
+    def register(credentials: RegistrationInput, request: Request):
+        if request.headers.get("content-type", "").split(";")[0] != "application/json":
+            raise HTTPException(415, "Registration requires JSON")
+        auth.register(request, credentials)
+        return {"registered": True}
 
     @app.get("/api/v1/auth/me")
     def me(principal: Principal = Depends(auth.user)):

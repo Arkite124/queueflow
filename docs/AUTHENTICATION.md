@@ -1,20 +1,28 @@
-# 초대 계정 데모 인증
+# 계정 가입과 로그인
 
-현재 일반 회원가입은 제공하지 않습니다. 관리자가 서버 CLI에서 계정을 만든 뒤 별도 경로로 초대한 사람에게 전달합니다. 사용자 작업/파일은 DB user UUID에 귀속되며, client가 owner 헤더나 폼 필드로 다른 사용자를 선택할 수 없습니다. 기존 `local` 소유 작업은 새 사용자에게 자동 이전하지 않습니다.
+방문자가 아이디와 비밀번호만으로 직접 가입합니다. 이메일·이름·전화번호는 받지 않으며 비밀번호 찾기와 웹 비밀번호 재설정은 제공하지 않습니다. 가입 화면에서 복구 기능이 없음을 안내합니다. 비밀번호를 잊고 새 계정을 만들면 이전 계정의 작업에는 접근할 수 없습니다.
+
+가입 후 로그인하면 사용자 작업/파일은 DB user UUID에 귀속됩니다. 로그아웃하거나 브라우저가 바뀌어도 같은 계정으로 로그인하면 기존 작업을 조회할 수 있습니다. 파일은 보존기간이 지나면 만료되므로 계정 유지와 파일 보존은 별개입니다. client가 owner 헤더나 폼 필드로 다른 사용자를 선택할 수 없습니다. 기존 `local` 소유 작업은 새 사용자에게 자동 이전하지 않습니다.
 
 ## 실행 모드
 
 | 모드 | 설정 | 용도 |
 |---|---|---|
 | local | DEPLOYMENT_MODE=local, AUTH_MODE=local | localhost 단일 사용자, 기존 개발 테스트 |
-| 로그인 개발 | DEPLOYMENT_MODE=local, AUTH_MODE=session, COOKIE_SECURE=false | localhost에서 초대 계정 흐름 검증 |
-| 공개 초대 데모 | DEPLOYMENT_MODE=public, AUTH_MODE=session, COOKIE_SECURE=true, 정확한 HTTPS CORS origin | 검증을 마친 별도 운영 환경 |
+| 로그인 개발 | DEPLOYMENT_MODE=local, AUTH_MODE=session, COOKIE_SECURE=false | localhost에서 가입·로그인 검증 |
+| 공개 데모 | DEPLOYMENT_MODE=public, AUTH_MODE=session, COOKIE_SECURE=true, 정확한 HTTPS CORS origin | 검증을 마친 별도 운영 환경 |
 
-public 모드에서 세션 인증/Secure cookie/정확한 HTTPS origin이 빠지면 앱 설정이 실패합니다. `docker-compose.production.yml`의 API 설정이 이를 강제합니다. 이 파일은 실제 운영 서버에 아직 적용하지 않았습니다.
+public 모드에서 세션 인증/Secure cookie/정확한 HTTPS origin이 빠지면 앱 설정이 실패합니다. `docker-compose.production.yml`의 API 설정이 이를 강제합니다.
 
-## 계정 만들기와 폐기
+`PUBLIC_REGISTRATION=true`가 기본이며 session 모드에서만 가입할 수 있습니다. `false`로 설정하면 신규 가입을 닫되 기존 계정의 로그인은 유지합니다. 로그인 전 `GET /api/v1/auth/config`로 가입 가능 여부를 확인합니다. 가입은 `POST /api/v1/auth/register`에 JSON username/password를 전송하며, 성공하면 201을 반환하고 별도 로그인으로 세션을 발급합니다. 일반 가입으로 관리자 권한을 선택할 수 없습니다.
 
-스키마를 `0002`까지 적용한 QueueFlow 컨테이너에서 실행합니다. 비밀번호는 터미널의 숨김 입력으로 받고 인자·Git·로그에 쓰지 않습니다. 기본 계정/공통 운영 비밀번호를 자동 생성하지 않습니다.
+가입 아이디는 3–64자의 영문·숫자·점·하이픈·밑줄이며 영문 또는 숫자로 시작합니다. 대소문자를 구분하지 않고 소문자로 저장합니다. 비밀번호는 공백을 포함해 입력 그대로 12–128자를 사용합니다. 같은 아이디의 동시 가입은 DB UNIQUE 제약으로 하나만 성공하고 나머지는 409입니다.
+
+가입 요청은 실제 연결 주소당 분당 5회, API 프로세스 전체 시간당 30회로 제한합니다. 임의의 `X-Forwarded-For`를 직접 신뢰하지 않으며 proxy 구성에 따라 주소별 한도가 여러 방문자에게 함께 적용될 수 있습니다. 이 제한은 프로세스 메모리 기준이므로 재시작 시 초기화되고 다중 API 인스턴스를 통합하지 않습니다. 가입과 로그인은 비밀번호 계산 동시 한도 2개를 공유합니다. 인증 요청 본문은 실제 수신 바이트 기준 8 KiB로 제한합니다.
+
+## 관리자 운영 도구
+
+스키마 `0002`의 기존 계정·세션 테이블을 그대로 사용하므로 이 변경에 새 migration은 필요하지 않습니다. 관리자 생성·계정 비활성화 등의 운영 명령은 QueueFlow 컨테이너에서 실행합니다. 비밀번호는 터미널의 숨김 입력으로 받고 인자·Git·로그에 쓰지 않습니다. 기본 계정/공통 운영 비밀번호를 자동 생성하지 않습니다. 수동 reset-password 명령은 관리자 운영용이며 방문자에게 제공하는 복구 기능은 아닙니다.
 
 ```powershell
 docker compose exec api python -m scripts.manage_users create owner --admin
@@ -41,6 +49,6 @@ docker compose exec api python -m scripts.manage_users disable invited-user
 
 ## 확인한 범위
 
-SQLite + HTTPS TestClient에서 세션 cookie 속성·만료·폐기·계정 분리·멱등 키 범위·파일 접근·CSRF/Origin·관리자 범위·실패 잠금·public 설정 오류를 검증했습니다. 재부팅 후 실제 PostgreSQL/Redis 전체 테스트 54개와 격리 Compose 시나리오 8개를 통과했고, 로컬 Chrome에서 로그인·CSV 업로드·다운로드·계정 전환·세션 만료를 확인했습니다. 공개 HTTPS 도메인의 cookie·CORS·CSRF는 서버 배포 단계에서 확인합니다. 근거는 [홈 PC 검증 기록](TESTING.md), 이어갈 명령은 [서버 PC 인계 문서](DEPLOYMENT.md)에 있습니다.
+단위 테스트는 가입 입력·중복·역할 주입 차단·가입 제한·세션 cookie·만료·폐기·계정별 접근·CSRF/Origin·실패 잠금·public 설정 오류를 검증합니다. PostgreSQL/Redis 통합 테스트는 동시 가입의 DB UNIQUE 충돌과 rollback, 가입 후 로그인부터 CSV 처리·파일 조회·로그아웃까지 확인합니다. 실제 브라우저의 가입 화면과 공개 HTTPS 도메인의 cookie·CORS·CSRF는 별도로 확인해야 합니다. 재현 방법은 [테스트 안내](TESTING.md), 운영 반영 절차는 [배포 안내](DEPLOYMENT.md)에 있습니다.
 
 설계 참고: [OWASP Password Storage](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html), [OWASP CSRF Prevention](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html), [Starlette response cookies](https://www.starlette.io/responses/).

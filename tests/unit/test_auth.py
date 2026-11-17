@@ -23,7 +23,8 @@ ORIGIN = "https://demo.example.test"
 @pytest.fixture
 def invited(tmp_path):
     settings = Settings(database_url=f"sqlite:///{tmp_path / 'accounts.db'}", storage_root=tmp_path / "files",
-                        deployment_mode="public", auth_mode="session", cookie_secure=True, cors_origins=[ORIGIN])
+                        deployment_mode="public", auth_mode="session", public_registration=False,
+                        cookie_secure=True, cors_origins=[ORIGIN])
     engine = make_engine(settings.database_url)
     Base.metadata.create_all(engine)
     sessions = make_sessions(engine)
@@ -152,7 +153,7 @@ def test_login_origin_and_size_and_public_signup_are_rejected(invited):
                        headers={"Origin": "https://untrusted.example.test"}).status_code == 403
     assert client.post("/api/v1/auth/login", content=b"x" * 9000,
                        headers={"Content-Type": "application/json"}).status_code == 413
-    assert client.post("/api/v1/auth/register", json={"username": "anyone", "password": PASSWORD}).status_code == 404
+    assert client.post("/api/v1/auth/register", json={"username": "anyone", "password": PASSWORD}).status_code == 403
     assert submit(client).status_code == 401
 
 
